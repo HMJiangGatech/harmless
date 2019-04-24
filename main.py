@@ -96,12 +96,12 @@ if __name__ == '__main__':
     print('Loading data...')
     
     if opt.data == 'twitter':
-        PATH = 'data'
+        PATH = 'data/twitter'
         G, tweets, val_tweets = load_data(PATH)
         G_matrix = nx.to_numpy_matrix(G)
         G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
     elif opt.data == 'linkedin':
-        PATH = 'data'  
+        PATH = 'data/linkedin'  
         G, tweets, val_tweets = load_linkedin_data(PATH)
         G_matrix = nx.to_numpy_matrix(G)
         G_matrix = np.asarray(G_matrix) 

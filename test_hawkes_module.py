@@ -27,12 +27,14 @@ import torch.nn
 from utils import *
 from Hawkes_model import *
 
-
+seed = 1
+np.random.seed(seed)
+torch.manual_seed(seed)
     
     
 def initialize(data, alpha0, K, T,method, device):
     
-    hawkes_models = Hawkes_models(data,T,K,method,lr=1e-2, inner_lr=1e-2, device=device)
+    hawkes_models = Hawkes_models(data,T,K,method,lr=2e-3, inner_lr=2e-3, device=device)
 
   
     return hawkes_models
@@ -53,7 +55,7 @@ def update_parameter(hawkes_models, N, K):
 
 #PATH = '../twitter/'
 device = 'cpu'
-num_iter = 20
+num_iter = 500
 K = 1
 alpha0 = np.ones(K)/K
 

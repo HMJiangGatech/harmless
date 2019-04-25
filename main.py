@@ -32,12 +32,12 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, default='linkedin')
 parser.add_argument('--seed', type=int, default=1)
-parser.add_argument('--lr', type=float, default=1e-4)
-parser.add_argument('--inner_lr', type=float, default=1e-4)
-parser.add_argument('--K', type=int, default=5)
-parser.add_argument('--max_iter', type=int, default=100)
+parser.add_argument('--lr', type=float, default=5e-2)
+parser.add_argument('--inner_lr', type=float, default=5e-2)
+parser.add_argument('--K', type=int, default=2)
+parser.add_argument('--max_iter', type=int, default=1000)
 parser.add_argument('--pretrain_iter', type=int, default=1000)
-parser.add_argument('--method', type=str, default='fomaml')
+parser.add_argument('--method', type=str, default='maml')
 opt = parser.parse_args()
 
 seed = opt.seed
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     parameter = pretrain(data, parameter, pretrain_iter, opt.lr)
     
     
-    parameter_list = []
+#    parameter_list = []
     loss_list = []
     eval_list = []
     #%%
@@ -127,7 +127,7 @@ if __name__ == '__main__':
         if error_flag:
             break
         
-        parameter_list.append(parameter.copy())
+#        parameter_list.append(parameter.copy())
         loss_list.append(loss)
         
         print('Iteration:', it, 'Loss:', loss)

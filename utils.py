@@ -189,9 +189,9 @@ def load_linkedin_data(PATH):
             G.remove_node(node)
             
     ########### make the gragh smaller #############
-    for node in G.nodes():
-        if node>1000:
-            G.remove_node(node)
+#    for node in G.nodes():
+#        if node>1000:
+#            G.remove_node(node)
 #    nx.draw(G)
     ################################################
             

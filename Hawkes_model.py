@@ -22,7 +22,7 @@ class Hawkes_univariant(nn.Module):
         self.alpha.data.fill_(init_param[1])
         self.w.data.fill_(init_param[2])
 
-        self.reg = 1e-10
+        self.reg = 1e-2
         self.T = T
         self.inner_lr = inner_lr
     

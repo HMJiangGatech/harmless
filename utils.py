@@ -251,7 +251,7 @@ def load_overflow_data(PATH, isMath=True):
 
     print(min_time)
     print(max_time)
-    max_time = np.max(time_list) = min_time
+    max_time = np.max(time_list) - min_time
 
     # normalize time and add node to G
     for key, val in user_time_dict.items():

@@ -238,15 +238,20 @@ def load_overflow_data(PATH, isMath=True):
     for item in data:
         user1, user2, time = item.strip('\n').split(' ')
         user1, user2, time = int(user1), int(user2), int(time)
-        time_list.append(time)
-        G.add_edge(user1, user2)
-        if user1 in user_time_dict:
-            user_time_dict[user1].append(time)
-        else:
-            user_time_dict[user1] = [time]
+        if isMath or (item >= 1.43e9 and time <= 1.44e9):
+            time_list.append(time)
+            G.add_edge(user1, user2)
+            if user1 in user_time_dict:
+                user_time_dict[user1].append(time)
+            else:
+                user_time_dict[user1] = [time]
 
     min_time = np.min(time_list)
     max_time = np.max(time_list) - min_time
+
+    print(min_time)
+    print(max_time)
+    max_time = np.max(time_list) = min_time
 
     # normalize time and add node to G
     for key, val in user_time_dict.items():

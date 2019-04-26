@@ -70,9 +70,12 @@ def load_data(PATH):
             G.remove_node(node)
 
     ########### make the gragh smaller #############
+    node_to_remove =[]
     for node in G.nodes():
         if node>200:
-            G.remove_node(node)
+            node_to_remove.append(node)
+    for node in node_to_remove:
+        G.remove_node(node)
 #    nx.draw(G)
     ################################################
 
@@ -184,9 +187,12 @@ def load_linkedin_data(PATH):
                         if abs(seqs[user_i][p]-seqs[user_j][q])<0.05:
                             G.add_edge(int(user_i), int(user_j))
 
+    node_to_remove = []
     for node in G.nodes():
         if len(seqs[str(node)])<3:
-            G.remove_node(node)
+            node_to_remove.append(node)
+    for node in node_to_remove:
+        G.remove_node(node)
 
     ########### make the gragh smaller #############
 #    for node in G.nodes():
@@ -249,11 +255,14 @@ def load_overflow_data(PATH, isMath=True):
             G.add_node(key)
 
     # remove nodes in Graph
+    node_to_remove = []
     for node in list(G.nodes()):
         if node not in user_time_dict and G.has_node(node):
-            G.remove_node(node)
+            node_to_remove.append(node)
         elif len(user_time_dict[node])  < 6 or len(user_time_dict[node]) > 7 and G.has_node(node):
-            G.remove_node(node)
+            node_to_remove.append(node)
+    for node in node_to_remove:
+        G.remove_node(node)
 
 
     seq_list = []

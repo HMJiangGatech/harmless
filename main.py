@@ -104,7 +104,17 @@ if __name__ == '__main__':
         PATH = 'data/linkedin'  
         G, tweets, val_tweets = load_linkedin_data(PATH)
         G_matrix = nx.to_numpy_matrix(G)
-        G_matrix = np.asarray(G_matrix) 
+        G_matrix = np.asarray(G_matrix)
+    elif opt.data == 'mathoverflow':
+        PATH = 'data/mathoverflow'
+        G, tweets, val_tweets = load_overflow_data(PATH)
+        G_matrix = nx.to_numpy_matrix(G)
+        G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
+    elif opt.data == 'stackoverflow':
+        PATH = 'data/stackoverflow'
+        G, tweets, val_tweets = load_overflow_data(PATH, False)
+        G_matrix = nx.to_numpy_matrix(G)
+        G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
 
     data = {'matrix': G_matrix, 'G': G, 'tweets': tweets, 'val_tweets': val_tweets }
     

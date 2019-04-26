@@ -307,7 +307,8 @@ class Hawkes_models():
             for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
                 self.optimizer_tester.zero_grad()
                 
-                index = np.argmax(weights[i,:])
+#                index = np.argmax(weights[i,:])
+                index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
                 model = self.models[index]
                 params = [model.mu, model.alpha, model.w]
                 

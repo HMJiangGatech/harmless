@@ -119,7 +119,8 @@ class Hawkes_models():
         if self.method == 'mle':
         
             self.models = []
-            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+#            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+            theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
                 self.models.append(Hawkes_mle(list(theta[k,:]),T, device=device))
             
@@ -130,7 +131,8 @@ class Hawkes_models():
             
         elif self.method == 'maml':
             self.models = []
-            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+#            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+            theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
                 self.models.append(Hawkes_maml(list(theta[k,:]),T, device=device))
             
@@ -140,7 +142,8 @@ class Hawkes_models():
             
         elif self.method =='fomaml' or self.method == 'reptile':
             self.models = []
-            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+#            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+            theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
                 self.models.append(Hawkes_mle(list(theta[k,:]),T, device=device))
             
@@ -148,14 +151,16 @@ class Hawkes_models():
             params = [item for sublist in params for item in sublist]
             self.optimizer = torch.optim.SGD(params, lr=lr)
             
-            theta = np.exp(np.random.normal(size=(3)))*0.1
+#            theta = np.exp(np.random.normal(size=(3)))*0.1
+            theta = np.zeros(shape=(3))+0.1
             self.shadow_model = Hawkes_mle(list(theta),T, device=device)
             
             self.shadow_params = [self.shadow_model.mu, self.shadow_model.alpha, self.shadow_model.w] 
             self.shadow_optimizer = torch.optim.SGD(self.shadow_params, lr=lr)
             
             # for evaluation
-            theta = np.exp(np.random.normal(size=(3)))*0.1
+#            theta = np.exp(np.random.normal(size=(3)))*0.1
+            theta = np.zeros(shape=(3))+0.1
             self.model_tester = Hawkes_mle(list(theta),T, device=device)
         
             self.params_tester = [self.model_tester.mu, self.model_tester.alpha, self.model_tester.w]
@@ -290,7 +295,9 @@ class Hawkes_models():
                 model.eval()
             for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
                     
-                index = np.argmax(weights[i,:])
+#                index = np.argmax(weights[i,:])
+                index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
+
                 model = self.models[index]
                 #update once            
                 update_mu, update_alpha, update_w = model.update_once(seq)

@@ -36,7 +36,7 @@ parser.add_argument('--lr', type=float, default=1e-2)
 parser.add_argument('--inner_lr', type=float, default=1e-2)
 parser.add_argument('--K', type=int, default=2)
 parser.add_argument('--max_iter', type=int, default=1000)
-parser.add_argument('--pretrain_iter', type=int, default=1000)
+parser.add_argument('--pretrain_iter', type=int, default=0)
 parser.add_argument('--method', type=str, default='maml')
 opt = parser.parse_args()
 

@@ -37,7 +37,9 @@ parser.add_argument('--inner_lr', type=float, default=1e-2)
 parser.add_argument('--K', type=int, default=2)
 parser.add_argument('--max_iter', type=int, default=1000)
 parser.add_argument('--pretrain_iter', type=int, default=0)
-parser.add_argument('--method', type=str, default='maml')
+parser.add_argument('--method', type=str, default='maml', help='mle | maml | fomaml | reptile')
+parser.add_argument('--init_theta', type=str, default='random', help='uniform | random ')
+
 opt = parser.parse_args()
 
 seed = opt.seed
@@ -45,7 +47,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
     
     
-def initialize(data, alpha0, K, T, method, device, lr, inner_lr):
+def initialize(data, alpha0, K, T, method, device, lr, inner_lr, init_theta):
     G_matrix, tweets = data['matrix'], data['tweets']
     
     parameter = {'alpha': None, 
@@ -68,14 +70,14 @@ def initialize(data, alpha0, K, T, method, device, lr, inner_lr):
     
     parameter['psi'] = np.random.dirichlet(parameter['alpha0'], size=(N, N))
     
-    hawkes_models = Hawkes_models(data,T,K,method, lr=lr, inner_lr=inner_lr, device=device)
+    hawkes_models = Hawkes_models(data,T,K,method, lr=lr, inner_lr=inner_lr, device=device, init = init_theta)
     
     phi_psi = np.expand_dims(parameter['phi'], axis=-1) * np.expand_dims(parameter['psi'], axis=-2)
     num_B = np.sum(phi_psi*np.expand_dims(np.expand_dims(G_matrix, axis=-1), axis=-1) , axis=(0,1))
     
-    rho_num = np.sum((1-G_matrix)*np.sum(phi_psi, axis=(2,3)))
-    rho_don = np.sum(phi_psi)
-    don_B = (1-rho_num/rho_don) * np.sum(phi_psi, axis=(0,1))
+#    rho_num = np.sum((1-G_matrix)*np.sum(phi_psi, axis=(2,3)))
+#    rho_don = np.sum(phi_psi)
+    don_B = np.sum(phi_psi, axis=(0,1))
     parameter['B'] = (num_B/don_B).clip(1e-10, 1-1e-10)
     
     parameter['rho'] = (1.-np.sum(G_matrix)/(N*N))
@@ -119,7 +121,7 @@ if __name__ == '__main__':
     data = {'matrix': G_matrix, 'G': G, 'tweets': tweets, 'val_tweets': val_tweets }
     
     print('Initializing...')
-    parameter, hawkes_models = initialize(data, alpha0, K, 1, method, device, opt.lr, opt.inner_lr)
+    parameter, hawkes_models = initialize(data, alpha0, K, 1, method, device, opt.lr, opt.inner_lr, opt.init_theta)
     
     parameter = pretrain(data, parameter, pretrain_iter, opt.lr)
     

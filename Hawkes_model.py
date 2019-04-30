@@ -112,15 +112,17 @@ class Hawkes_maml(Hawkes_univariant):
     
     
 class Hawkes_models():
-    def __init__(self, data, T, K, method, lr=1e-2, inner_lr=1e-2, device='cpu', Tensor = torch.FloatTensor):
+    def __init__(self, data, T, K, method, lr=1e-2, inner_lr=1e-2, device='cpu', Tensor = torch.FloatTensor, init='random'):
         
         self.method = method
         
         if self.method == 'mle':
         
             self.models = []
-#            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
-            theta = np.zeros(shape=(K, 3))+0.1
+            if init == 'random':
+                theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+            if init == 'uniform':
+                theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
                 self.models.append(Hawkes_mle(list(theta[k,:]),T, device=device))
             
@@ -131,8 +133,10 @@ class Hawkes_models():
             
         elif self.method == 'maml':
             self.models = []
-#            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
-            theta = np.zeros(shape=(K, 3))+0.1
+            if init == 'random':
+                theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+            if init == 'uniform':
+                theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
                 self.models.append(Hawkes_maml(list(theta[k,:]),T, device=device))
             
@@ -142,8 +146,10 @@ class Hawkes_models():
             
         elif self.method =='fomaml' or self.method == 'reptile':
             self.models = []
-#            theta = np.exp(np.random.normal(size=(K, 3)))*0.1
-            theta = np.zeros(shape=(K, 3))+0.1
+            if init == 'random':
+                theta = np.exp(np.random.normal(size=(K, 3)))*0.1
+            if init == 'uniform':
+                theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
                 self.models.append(Hawkes_mle(list(theta[k,:]),T, device=device))
             
@@ -151,7 +157,10 @@ class Hawkes_models():
             params = [item for sublist in params for item in sublist]
             self.optimizer = torch.optim.SGD(params, lr=lr)
             
-#            theta = np.exp(np.random.normal(size=(3)))*0.1
+            if init == 'random':
+                theta = np.exp(np.random.normal(size=(3)))*0.1
+            if init == 'uniform':
+                theta = np.zeros(shape=(3))+0.1
             theta = np.zeros(shape=(3))+0.1
             self.shadow_model = Hawkes_mle(list(theta),T, device=device)
             
@@ -159,8 +168,10 @@ class Hawkes_models():
             self.shadow_optimizer = torch.optim.SGD(self.shadow_params, lr=lr)
             
             # for evaluation
-#            theta = np.exp(np.random.normal(size=(3)))*0.1
-            theta = np.zeros(shape=(3))+0.1
+            if init == 'random':
+                theta = np.exp(np.random.normal(size=(3)))*0.1
+            if init == 'uniform':
+                theta = np.zeros(shape=(3))+0.1
             self.model_tester = Hawkes_mle(list(theta),T, device=device)
         
             self.params_tester = [self.model_tester.mu, self.model_tester.alpha, self.model_tester.w]

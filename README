@@ -7,7 +7,6 @@ Data choices: 'twitter', 'linkedin', 'mathoverflow','stackoverflow'
 
 Files with names test_* is the test module for individual part of the code. File test_hawkes_module.py can serve as the code for baseline 2.
 
-!!! Method reptile does not work yet !!! (To Haoming: please remove this line after fix the bug)
-
+Method reptile requires much larger learning rate than other methods.
 
 

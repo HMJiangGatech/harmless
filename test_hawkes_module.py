@@ -34,7 +34,7 @@ torch.manual_seed(seed)
     
 def initialize(data, alpha0, K, T,method, device):
     
-    hawkes_models = Hawkes_models(data,T,K,method,lr=2e-3, inner_lr=2e-3, device=device)
+    hawkes_models = Hawkes_models(data,T,K,method,lr=1e-3, inner_lr=1e-3, device=device, init='random')
 
   
     return hawkes_models
@@ -79,7 +79,7 @@ N = len(tweets)
 #parameter_list = []
 loss_list = []
 eval_list = []
-weights = np.ones((N, K))/(N*K)
+weights = np.ones((N, K))
 #%%
 for it in range(num_iter):
     
@@ -88,6 +88,7 @@ for it in range(num_iter):
     error_flag, loss = update_parameter(hawkes_models, N, K)
     
     if error_flag:
+        print('Encountered invalid value, stopping the iterations')
         break
     
 #    parameter_list.append(parameter.copy())
@@ -106,5 +107,48 @@ for it in range(num_iter):
 #        hawkes_models.train()
 
 #%%
+        
+delta_T_list = np.arange(0.025,0.2,0.025)
+auc_list = []
+fpr_list = []
+tpr_list = []
+for delta_T in delta_T_list:
+    auc, fpr, tpr = hawkes_models.get_roc_auc(np.ones(shape=(N,1)), delta_T)
+    auc_list.append(auc)
+    fpr_list.append(fpr)
+    tpr_list.append(tpr)
+
+result_PATH = os.path.join('../result', 'baseline2')
+if not os.path.isdir(result_PATH):
+    os.makedirs(result_PATH)
+
+file_name = 'linkedin_seed'+str(seed)+'_lr'+str(1e-2) \
+            +'_iter'+str(num_iter) \
+            + '_method_baseline2_init_random.txt'
+with open(os.path.join(result_PATH, file_name), 'w') as f:
+    for loss in loss_list:
+        f.write(str(loss)+', ')
+    for nll in eval_list:
+        f.write(str(nll)+', ')
+    f.write('\n')
+    f.write('delta_T\n')
+    for delta_T in delta_T_list:
+        f.write(str(delta_T)+', ')
+    f.write('\n')
+    f.write('auc\n')
+    for auc in auc_list:
+        f.write(str(auc)+', ')
+        
+#%%
 import matplotlib.pyplot as plt
 plt.plot(eval_list)
+plt.show()
+#%%
+for delta_T, fpr, tpr in zip(delta_T_list, fpr_list, tpr_list):
+    plt.plot(fpr, tpr, label='$\Delta T$='+str(delta_T))
+plt.legend(fontsize=15)
+plt.show()
+#%%
+plt.plot(delta_T_list, auc_list)
+plt.ylim([0,1])
+plt.show()

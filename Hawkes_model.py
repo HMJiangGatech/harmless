@@ -132,7 +132,7 @@ class Hawkes_models():
             if init == 'uniform':
                 theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
-                self.models.append(Hawkes_mle(list(theta[k,:]),T, device=device))
+                self.models.append(Hawkes_mle(list(theta[k,:]),T, device=device, inner_lr=inner_lr))
             
             params = [[model.mu, model.alpha, model.w] for model in self.models]
             params = [item for sublist in params for item in sublist]
@@ -146,7 +146,7 @@ class Hawkes_models():
             if init == 'uniform':
                 theta = np.zeros(shape=(K, 3))+0.1
             for k in range(K):
-                self.models.append(Hawkes_maml(list(theta[k,:]),T, device=device))
+                self.models.append(Hawkes_maml(list(theta[k,:]),T, device=device,inner_lr=inner_lr))
             
             params = [[model.mu, model.alpha, model.w] for model in self.models]
             params = [item for sublist in params for item in sublist]
@@ -173,7 +173,7 @@ class Hawkes_models():
             self.shadow_model = Hawkes_mle(list(theta),T, device=device)
             
             self.shadow_params = [self.shadow_model.mu, self.shadow_model.alpha, self.shadow_model.w] 
-            self.shadow_optimizer = torch.optim.SGD(self.shadow_params, lr=lr)
+            self.shadow_optimizer = torch.optim.SGD(self.shadow_params, lr=inner_lr)
             
             # for evaluation
             if init == 'random':

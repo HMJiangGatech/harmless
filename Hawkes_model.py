@@ -7,7 +7,7 @@ Created on Tue Apr 16 16:35:33 2019
 """
 import torch
 import torch.nn as nn
-
+from sklearn.metrics import roc_curve, auc
 import numpy as np
 
 class Hawkes_univariant(nn.Module):
@@ -36,6 +36,14 @@ class Hawkes_univariant(nn.Module):
         NLL = update_mu * (pred-x[:,-1]) - pos + neg
         
         return NLL
+    def get_prob(self, x, delta_T, update_mu, update_alpha, update_w):
+        delta = x[:,-1] - x
+        delta = torch.exp(-update_w*delta)
+        delta = update_alpha * (torch.exp(-update_w*delta_T)-1) * torch.sum(delta)
+        
+        prob = 1 - torch.exp(-update_mu*delta_T + delta)
+#        print(prob)
+        return prob
     
     def update_once(self, x):
         raise NotImplementedError
@@ -192,9 +200,6 @@ class Hawkes_models():
         
     def compute_loss(self):
         
-        
-        
-        
         if self.method == 'mle' or self.method == 'maml':
             self.L = torch.zeros(self.N, self.K)
             for user_id, tweet in enumerate(self.tweets):
@@ -295,70 +300,72 @@ class Hawkes_models():
         else:
             raise NotImplementedError
             
+    def train(self):
+        for model in self.models:
+            model.train()
+            
+    def eval(self):
+        for model in self.models:
+            model.eval()
+            
     def show_param(self):
         for k, model in enumerate(self.models):
             print('Model:', k, "mu:",model.mu.item(),"alpha:",model.alpha.item(),"w:",model.w.item())
     
+    def get_eval_param(self, model, seq):
+        if self.method == 'mle' or self.method == 'maml':
+            return model.update_once(seq)
+        elif self.method == 'fomaml' or self.method == 'reptile':
+            self.optimizer_tester.zero_grad()
+
+            params = [model.mu, model.alpha, model.w]
+            for param1, param2 in zip(self.params_tester,params):
+                param1.data = param2.data.clone()
+                                        
+            #update once
+            loss = self.model_tester(seq)
+            loss.backward()
+            self.optimizer_tester.step()
+            
+            return self.model_tester.mu, self.model_tester.alpha, self.model_tester.w
+        
     def evaluate(self, weights):
         accum_nll = 0
-        if self.method == 'mle' or self.method == 'maml':
-            for model in self.models:
-                model.eval()
-            for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
-                for k, model in enumerate(self.models):
-                
-#                index = np.argmax(weights[i,:])
-#                index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
-                
-#                model = self.models[index]
-                    
-                    #update once            
-                    update_mu, update_alpha, update_w = model.update_once(seq)
-                    
-                    #evaluate
-                    nll = model.evaluate(seq, target, update_mu, update_alpha, update_w)
-    
-                    accum_nll += weights[i,k]*nll.data.item()
-                    
-                    
-            for model in self.models:
-                model.train()
-                
-            return accum_nll/self.N
-        elif self.method == 'fomaml' or self.method == 'reptile':
-            for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
-                for k, model in enumerate(self.models):
-                    self.optimizer_tester.zero_grad()
-                    
-    #                index = np.argmax(weights[i,:])
-#                    index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
-#                    model = self.models[index]
-                    params = [model.mu, model.alpha, model.w]
-                    
-                    
-                    for param1, param2 in zip(self.params_tester,params):
-                        param1.data = param2.data.clone()
-                                                
-                    #update once
-                    
-                    loss = self.model_tester(seq)
-                    loss.backward()
-                    self.optimizer_tester.step()
-                    
-                    #evaluate
-                    self.model_tester.eval()
-                    nll = self.model_tester.evaluate(seq, target, 
-                                                     self.model_tester.mu, self.model_tester.alpha, self.model_tester.w)
+        for model in self.models:
+            model.eval()
+        for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
+            for k, model in enumerate(self.models):
+                #update once            
+                update_mu, update_alpha, update_w = self.get_eval_param(model, seq)
+                #evaluate
+                nll = model.evaluate(seq, target, update_mu, update_alpha, update_w)
+                accum_nll += weights[i,k]*nll.data.item()
         
-                    accum_nll += weights[i,k]*nll.data.item()
-                    self.model_tester.train()
-                
-            return accum_nll/self.N
+            
+        return accum_nll/self.N
+
         
-    def get_auc(self, weights, delta_T):
-        pass
+    def get_roc_auc(self, weights, delta_T):
+        self.prob_list = []
+        self.truth_list = []
         
+        for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
+            if bool(target-seq[0][-1]<=delta_T):
+                self.truth_list.append(1)
+            else:
+                self.truth_list.append(0)
+            mix_prob = 0
+            for k, model in enumerate(self.models):
+                update_mu, update_alpha, update_w = self.get_eval_param(model, seq)
+                prob = model.get_prob(seq, delta_T, update_mu, update_alpha, update_w)
+                mix_prob += weights[i,k]*prob.data.item()
+            self.prob_list.append(mix_prob)
+            
+        fpr, tpr, _ = roc_curve(self.truth_list, self.prob_list)
         
+        roc_auc = auc(fpr, tpr)
+        
+        return roc_auc, fpr, tpr
         
         
 

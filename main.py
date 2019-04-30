@@ -31,6 +31,7 @@ from update_param import *
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, default='linkedin')
+parser.add_argument('--result_path', type=str, default='../result')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--lr', type=float, default=1e-2)
 parser.add_argument('--inner_lr', type=float, default=1e-2)
@@ -41,7 +42,7 @@ parser.add_argument('--method', type=str, default='fomaml', help='mle | maml | f
 parser.add_argument('--init_theta', type=str, default='random', help='uniform | random ')
 
 opt = parser.parse_args()
-
+#%%
 seed = opt.seed
 np.random.seed(seed)
 torch.manual_seed(seed)
@@ -145,16 +146,64 @@ if __name__ == '__main__':
         print('Iteration:', it, 'Loss:', loss)
     
         if it % 1 == 0:
-    #        hawkes_models.eval()
+            hawkes_models.eval()
             nll = hawkes_models.evaluate(parameter['gamma'])
             eval_list.append(nll)
             
             print('Iteration:', it, 'Eval NLL:', nll)
             
-    #        hawkes_models.train()
+            hawkes_models.train()
     
         
     #%%
-        
+    
+    delta_T_list = np.arange(0.025,0.2,0.025)
+    auc_list = []
+    fpr_list = []
+    tpr_list = []
+    for delta_T in delta_T_list:
+        auc, fpr, tpr = hawkes_models.get_roc_auc(parameter['gamma'], delta_T)
+        auc_list.append(auc)
+        fpr_list.append(fpr)
+        tpr_list.append(tpr)
+
+    result_PATH = os.path.join(opt.result_path, 'our_result')
+    if not os.path.isdir(result_PATH):
+        os.makedirs(result_PATH)
+    
+    file_name = str(opt.data)+'_seed'+str(opt.seed)+'_lr'+str(opt.lr)+'_innerlr'+str(opt.inner_lr) \
+                +'_K'+str(opt.K)+'_pretrain'+str(opt.pretrain_iter)+'_iter'+str(opt.max_iter) \
+                + '_method_'+opt.method+'_init_'+opt.init_theta+'.txt'
+    with open(os.path.join(result_PATH, file_name), 'w') as f:
+        for loss in loss_list:
+            f.write(str(loss)+', ')
+        for nll in eval_list:
+            f.write(str(nll)+', ')
+        f.write('\n')
+        f.write('delta_T\n')
+        for delta_T in delta_T_list:
+            f.write(str(delta_T)+', ')
+        f.write('\n')
+        f.write('auc\n')
+        for auc in auc_list:
+            f.write(str(auc)+', ')
+    
+    #%%
     import matplotlib.pyplot as plt
+    
     plt.plot(eval_list)
+    plt.show()
+    
+#%%    
+
+    for delta_T, fpr, tpr in zip(delta_T_list, fpr_list, tpr_list):
+        plt.plot(fpr, tpr, label='$\Delta T$='+str(delta_T))
+    plt.legend(fontsize=15)
+    plt.show()
+    
+    plt.plot(delta_T_list, auc_list)
+    plt.ylim([0,1])
+    plt.show()
+
+    
+    

@@ -37,7 +37,7 @@ parser.add_argument('--inner_lr', type=float, default=1e-2)
 parser.add_argument('--K', type=int, default=2)
 parser.add_argument('--max_iter', type=int, default=1000)
 parser.add_argument('--pretrain_iter', type=int, default=0)
-parser.add_argument('--method', type=str, default='maml', help='mle | maml | fomaml | reptile')
+parser.add_argument('--method', type=str, default='fomaml', help='mle | maml | fomaml | reptile')
 parser.add_argument('--init_theta', type=str, default='random', help='uniform | random ')
 
 opt = parser.parse_args()

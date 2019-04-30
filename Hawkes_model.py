@@ -305,50 +305,59 @@ class Hawkes_models():
             for model in self.models:
                 model.eval()
             for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
-                    
-#                index = np.argmax(weights[i,:])
-                index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
-
-                model = self.models[index]
-                #update once            
-                update_mu, update_alpha, update_w = model.update_once(seq)
+                for k, model in enumerate(self.models):
                 
-                #evaluate
-                nll = model.evaluate(seq, target, update_mu, update_alpha, update_w)
+#                index = np.argmax(weights[i,:])
+#                index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
+                
+#                model = self.models[index]
+                    
+                    #update once            
+                    update_mu, update_alpha, update_w = model.update_once(seq)
+                    
+                    #evaluate
+                    nll = model.evaluate(seq, target, update_mu, update_alpha, update_w)
     
-                accum_nll += nll.data.item()
+                    accum_nll += weights[i,k]*nll.data.item()
+                    
+                    
             for model in self.models:
                 model.train()
                 
             return accum_nll/self.N
         elif self.method == 'fomaml' or self.method == 'reptile':
             for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
-                self.optimizer_tester.zero_grad()
-                
-#                index = np.argmax(weights[i,:])
-                index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
-                model = self.models[index]
-                params = [model.mu, model.alpha, model.w]
-                
-                
-                for param1, param2 in zip(self.params_tester,params):
-                    param1.data = param2.data.clone()
-                                            
-                #update once
-                
-                loss = self.model_tester(seq)
-                loss.backward()
-                self.optimizer_tester.step()
-                
-                #evaluate
-                self.model_tester.eval()
-                nll = self.model_tester.evaluate(seq, target, 
-                                                 self.model_tester.mu, self.model_tester.alpha, self.model_tester.w)
-    
-                accum_nll += nll.data.item()
-                self.model_tester.train()
+                for k, model in enumerate(self.models):
+                    self.optimizer_tester.zero_grad()
+                    
+    #                index = np.argmax(weights[i,:])
+#                    index = np.argmax(np.random.multinomial(1, weights[i,:], size=1))
+#                    model = self.models[index]
+                    params = [model.mu, model.alpha, model.w]
+                    
+                    
+                    for param1, param2 in zip(self.params_tester,params):
+                        param1.data = param2.data.clone()
+                                                
+                    #update once
+                    
+                    loss = self.model_tester(seq)
+                    loss.backward()
+                    self.optimizer_tester.step()
+                    
+                    #evaluate
+                    self.model_tester.eval()
+                    nll = self.model_tester.evaluate(seq, target, 
+                                                     self.model_tester.mu, self.model_tester.alpha, self.model_tester.w)
+        
+                    accum_nll += weights[i,k]*nll.data.item()
+                    self.model_tester.train()
                 
             return accum_nll/self.N
+        
+    def get_auc(self, weights, delta_T):
+        pass
+        
         
         
         

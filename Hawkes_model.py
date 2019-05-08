@@ -334,13 +334,14 @@ class Hawkes_models():
         for model in self.models:
             model.eval()
         for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
+            accum_likelihood = 0
             for k, model in enumerate(self.models):
                 #update once            
                 update_mu, update_alpha, update_w = self.get_eval_param(model, seq)
                 #evaluate
                 nll = model.evaluate(seq, target, update_mu, update_alpha, update_w)
-                accum_nll += weights[i,k]*nll.data.item()
-        
+                accum_likelihood += weights[i,k]*np.exp(-nll.data.item())        
+            accum_nll += -np.log(accum_likelihood)
             
         return accum_nll/self.N
 

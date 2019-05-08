@@ -279,7 +279,7 @@ def load_overflow_data(PATH, isMath=True):
     return G, seq_list, val_seq_list
 
 
-def read_911_data(PATH)
+def read_911_data(PATH):
     G = nx.Graph()
     path = os.path.join(PATH, '911.csv')
 
@@ -300,7 +300,7 @@ def read_911_data(PATH)
                         zip_time_dict[zip_code] = [timestamp]
 
     for zip_code1 in zip_time_dict:
-    for zip_code2 in zip_time_dict:
+      for zip_code2 in zip_time_dict:
         if (zip_code1 != zip_code2) and (np.abs(zip_code1 - zip_code2) <= 2):
             G.add_edge(zip_code1, zip_code2)
 

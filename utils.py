@@ -195,9 +195,12 @@ def load_linkedin_data(PATH):
         G.remove_node(node)
 
     ########### make the gragh smaller #############
+    node_to_remove = []
     for node in G.nodes():
         if node>1000:
-            G.remove_node(node)
+            node_to_remove.append(node)
+    for node in node_to_remove:
+        G.remove_node(node)
 #    nx.draw(G)
     ################################################
 
@@ -336,5 +339,3 @@ def read_911_data(PATH):
             seq_list.append(val[:-1])
             val_seq_list.append(val[-1])
     return G, seq_list, val_seq_list
-
-

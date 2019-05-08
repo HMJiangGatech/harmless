@@ -111,6 +111,8 @@ if __name__ == '__main__':
         G_matrix = nx.to_numpy_matrix(G)
         G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
 
+    T = max(val_tweets)*1.05
+
     result_PATH = os.path.join(result_PATH,(opt.result_path+"_" if opt.result_path is not None else "")+'lr'+str(opt.lr)+'_innerlr'+str(opt.inner_lr) \
                 +'_K'+str(opt.K)+'_pretrain'+str(opt.pretrain_iter)+'_iter'+str(opt.max_iter) \
                 + '_method_'+opt.method+'_init_'+opt.init_theta)
@@ -132,10 +134,9 @@ if __name__ == '__main__':
     data = {'matrix': G_matrix, 'G': G, 'tweets': tweets, 'val_tweets': val_tweets }
 
     print('Initializing...')
-    parameter, hawkes_models = initialize(data, alpha0, K, 1, method, device, opt.lr, opt.inner_lr, opt.init_theta)
+    parameter, hawkes_models = initialize(data, alpha0, K, T, method, device, opt.lr, opt.inner_lr, opt.init_theta)
 
     parameter = pretrain(data, parameter, pretrain_iter, opt.lr)
-
 
 #    parameter_list = []
     loss_list = []

@@ -10,14 +10,12 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from hawkes_generate import MHP
 
-T = 100
-
-def get_hawkes_data(mu0,alpha0,omega0,var=0.05):
+def get_hawkes_data(mu0,alpha0,omega0,T,var=0.05, max_len = 200):
     while True:
         mu = np.random.normal(mu0,var)
         alpha = np.random.normal(alpha0,var)
         omega = np.random.normal(omega0,var*5)
-        if mu < 0.05 or alpha < 0.05 or omega < 0.05:
+        if mu < 0.05 or alpha < 0.05 or omega < 0.05 or alpha > 0.97:
             continue
         try:
             P = MHP(mu=np.asarray([mu]), alpha=np.asarray([[alpha]]), omega=omega)
@@ -27,6 +25,8 @@ def get_hawkes_data(mu0,alpha0,omega0,var=0.05):
     # print(mu,alpha,omega)
     sequence = P.generate_seq(T)[:,0]
     sequence = np.hstack(([0], sequence))
+    if len(sequence) > max_len:
+        sequence = sequence[:max_len]
     target = sequence[-1]
     sequence = list(sequence)
     sequence.pop()
@@ -126,7 +126,7 @@ def generaldeco(func):
 
 
 @generaldeco
-def balanced_tree(r=5,h=3,style=0,h_thr=None):
+def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
     """
     r: number of rays
     h: depth of tree
@@ -147,23 +147,23 @@ def balanced_tree(r=5,h=3,style=0,h_thr=None):
     mu = random.uniform(0.5,0.9)
     alpha = random.uniform(0.5,0.9)
     omega = random.uniform(5,6)
-    sequence, target, param = get_hawkes_data(mu,alpha,omega)
+    sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
     seq_train += [sequence]
     seq_val += [target]
     true_param += [param]
     for i in range(h):
         new_layer = []
         if style==0 or (style==1 and i==(h-1)) or (style==1 and i==(h_thr-1)):
-            mu = random.uniform(0.5,0.9)
-            alpha = random.uniform(0.5,0.9)
-            omega = random.uniform(5,6)
+            mu = random.uniform(0.5,0.85)
+            alpha = random.uniform(0.5,0.85)
+            omega = random.uniform(2,6)
         for rootnode in layer:
             for j in range(r):
                 node_id += 1
                 G.add_node(node_id)
                 G.add_edge(rootnode,node_id)
                 new_layer += [node_id]
-                sequence, target, param = get_hawkes_data(mu,alpha,omega)
+                sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
                 seq_train += [sequence]
                 seq_val += [target]
                 true_param += [param]

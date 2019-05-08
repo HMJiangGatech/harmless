@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import roc_curve, auc
 import numpy as np
+import json
+import pickle
 
 class Hawkes_univariant(nn.Module):
     def __init__(self, init_param, T, inner_lr=1e-6, device='cpu'):
@@ -367,6 +369,20 @@ class Hawkes_models():
         roc_auc = auc(fpr, tpr)
         
         return roc_auc, fpr, tpr
+    
+#    def write_model(self, f):
+#        for k, model in enumerate(self.models):
+#            temp = {'Model:', k, "mu:",model.mu.item(),"alpha:",model.alpha.item(),"w:",model.w.item()}
+#            f.write(pickle.dumps(temp))
+#            
+#    def load_checkpoint(self, model_param):
+#        for k, (param, model) in enumerate(zip(model_param, self.models)):
+#            param = pickle.loads(param)
+#            
+#            model.mu.data.fill_(param['mu'])
+#            model.alpha.data.fill_(param['alpha'])
+#            model.w.data.fill_(param['w'])
+        
         
         
 

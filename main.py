@@ -6,13 +6,6 @@ Created on Tue Apr 16 12:13:13 2019
 @author: yujia
 """
 
-'''
-TO DO:
-    1. check clusters
-    2. check reptile, fomaml, and maml
-
-
-'''
 
 import numpy as np
 import math
@@ -35,7 +28,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, default='linkedin')
 parser.add_argument('--result_path', type=str, default='../result')
-parser.add_argument('--read_checkpoint', type=str, default='../result/our_checkpoint/linkedin_seed1_lr0.01_innerlr0.01_K2_pretrain0_iter10_method_maml_init_random.txt')
+parser.add_argument('--read_checkpoint', type=str, default=None)#'../result/our_checkpoint/linkedin_seed1_lr0.01_innerlr0.01_K2_pretrain0_iter10_method_maml_init_random.txt')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--lr', type=float, default=1e-2)
 parser.add_argument('--inner_lr', type=float, default=1e-2)
@@ -147,6 +140,8 @@ if __name__ == '__main__':
 #    parameter_list = []
     loss_list = []
     eval_list = []
+    eval_list_val = []
+    eval_list_test = []
     #%%
     for it in range(num_iter):
         
@@ -164,10 +159,12 @@ if __name__ == '__main__':
     
         if it % 1 == 0:
             hawkes_models.eval()
-            nll = hawkes_models.evaluate(parameter['gamma'])
-            eval_list.append(nll)
+            nll_val, nll_test, nll_all = hawkes_models.evaluate(parameter['gamma'])
+            eval_list.append(nll_all)
+            eval_list_val.append(nll_val)
+            eval_list_test.append(nll_test)
             
-            print('Iteration:', it, 'Eval NLL:', nll)
+            print('Iteration:', it, 'Eval NLL:', nll_val)
             
             hawkes_models.train()
     
@@ -195,7 +192,14 @@ if __name__ == '__main__':
     with open(os.path.join(result_PATH, file_name), 'w') as f:
         for loss in loss_list:
             f.write(str(loss)+', ')
+        f.write('\n')
         for nll in eval_list:
+            f.write(str(nll)+', ')
+        f.write('\n')
+        for nll in eval_list_val:
+            f.write(str(nll)+', ')
+        f.write('\n')
+        for nll in eval_list_test:
             f.write(str(nll)+', ')
         f.write('\n')
         f.write('delta_T\n')

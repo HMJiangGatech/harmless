@@ -200,6 +200,13 @@ class Hawkes_models():
         self.inner_lr = inner_lr
         self.lr = lr
         
+        test_level = 0.5
+        self.num_test = int(self.N*test_level)
+        self.num_val = self.N - self.num_test
+        indexes = np.random.permutation(self.N)
+        self.index_val = indexes[:self.num_val]
+        self.index_test = indexes[self.num_val:]
+        
     def compute_loss(self):
         
         if self.method == 'mle' or self.method == 'maml':
@@ -332,35 +339,44 @@ class Hawkes_models():
             return self.model_tester.mu, self.model_tester.alpha, self.model_tester.w
         
     def evaluate(self, weights):
-        accum_nll = 0
-        for model in self.models:
-            model.eval()
-        for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
+        accum_nll1 = 0
+        for i in self.index_val:
             accum_likelihood = 0
             for k, model in enumerate(self.models):
                 #update once            
-                update_mu, update_alpha, update_w = self.get_eval_param(model, seq)
+                update_mu, update_alpha, update_w = self.get_eval_param(model, self.tweets[i])
                 #evaluate
-                nll = model.evaluate(seq, target, update_mu, update_alpha, update_w)
+                nll = model.evaluate(self.tweets[i], self.val_tweets[i], update_mu, update_alpha, update_w)
                 accum_likelihood += weights[i,k]*np.exp(-nll.data.item())        
-            accum_nll += -np.log(accum_likelihood)
+            accum_nll1 += -np.log(accum_likelihood)
             
-        return accum_nll/self.N
+        accum_nll2 = 0
+        for i in self.index_test:
+            accum_likelihood = 0
+            for k, model in enumerate(self.models):
+                #update once            
+                update_mu, update_alpha, update_w = self.get_eval_param(model, self.tweets[i])
+                #evaluate
+                nll = model.evaluate(self.tweets[i], self.val_tweets[i], update_mu, update_alpha, update_w)
+                accum_likelihood += weights[i,k]*np.exp(-nll.data.item())        
+            accum_nll2 += -np.log(accum_likelihood)
+            
+        return accum_nll1/self.num_val, accum_nll2/self.num_test, (accum_nll1+accum_nll2)/self.N
 
         
     def get_roc_auc(self, weights, delta_T):
         self.prob_list = []
         self.truth_list = []
         
-        for i, (seq, target) in enumerate(zip(self.tweets,self.val_tweets)):
-            if bool(target-seq[0][-1]<=delta_T):
+        for i in self.index_test:
+            if bool(self.val_tweets[i]-self.tweets[i][0][-1]<=delta_T):
                 self.truth_list.append(1)
             else:
                 self.truth_list.append(0)
             mix_prob = 0
             for k, model in enumerate(self.models):
-                update_mu, update_alpha, update_w = self.get_eval_param(model, seq)
-                prob = model.get_prob(seq, delta_T, update_mu, update_alpha, update_w)
+                update_mu, update_alpha, update_w = self.get_eval_param(model, self.tweets[i])
+                prob = model.get_prob(self.tweets[i], delta_T, update_mu, update_alpha, update_w)
                 mix_prob += weights[i,k]*prob.data.item()
             self.prob_list.append(mix_prob)
             

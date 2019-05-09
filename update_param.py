@@ -81,6 +81,7 @@ def update_parameter(data, parameter, hawkes_models, lr):
                         + np.sum(parameter['psi'], axis=1)
     # print('alpha', parameter['alpha'])
     print('alpha', np.std(np.argmax(parameter['alpha'], axis=1)))
+
     #gamma
     L = hawkes_models.compute_loss()
     exp_L = np.exp(-L)
@@ -112,31 +113,31 @@ def update_parameter(data, parameter, hawkes_models, lr):
     parameter['phi'] = exp_digamma_alpha * np.exp(phi_right)
     parameter['phi'] = parameter['phi']/np.sum(parameter['phi'], axis=-1, keepdims=True)
 
-#    print('phi', parameter['phi'])
+    #print('phi', parameter['phi'])
 
     #psi
     psi_right = np.sum(np.expand_dims(parameter['phi'], axis=-1)*B_to_Y, axis=-2)
     parameter['psi'] = exp_digamma_alpha * np.exp(psi_right)
     parameter['psi'] = parameter['psi']/np.sum(parameter['psi'], axis=-1, keepdims=True)
 
-#    print('psi', parameter['psi'])
+    #print('psi', parameter['psi'])
 
     # alpha0
 
-#    digamma_alpha0 =  digamma(np.sum(parameter['alpha0'], axis=-1, keepdims=True)) - digamma(parameter['alpha0'])
-#    update_alpha0 = parameter['N']*digamma_alpha0 + np.sum(digamma_alpha, axis=0)
-#    parameter['alpha0'] = parameter['alpha0'] + lr*update_alpha0
+    # digamma_alpha0 =  digamma(np.sum(parameter['alpha0'], axis=-1, keepdims=True)) - digamma(parameter['alpha0'])
+    # update_alpha0 = parameter['N']*digamma_alpha0 + np.sum(digamma_alpha, axis=0)
+    # parameter['alpha0'] = parameter['alpha0'] + lr*update_alpha0
 
     #B
     phi_psi = np.expand_dims(parameter['phi'], axis=-1) * np.expand_dims(parameter['psi'], axis=-2)
     num_B = np.sum(phi_psi*np.expand_dims(np.expand_dims(G_matrix, axis=-1), axis=-1) , axis=(0,1))
     don_B =  np.sum(phi_psi, axis=(0,1))
 
-#    rho_num = np.sum((1-G_matrix)*np.sum(phi_psi, axis=(2,3)))
-#    rho_don = np.sum(phi_psi)
-#    don_B = (1-rho_num/rho_don) * np.sum(phi_psi, axis=(0,1))
+    # rho_num = np.sum((1-G_matrix)*np.sum(phi_psi, axis=(2,3)))
+    # rho_don = np.sum(phi_psi)
+    # don_B = (1-rho_num/rho_don) * np.sum(phi_psi, axis=(0,1))
     parameter['B'] = (num_B/don_B)#.clip(1e-10, 1-1e-10)
 
-#    print('B', parameter['B'])
+    # print('B', parameter['B'])
 
     return 0, loss

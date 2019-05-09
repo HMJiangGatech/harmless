@@ -36,7 +36,8 @@ import generator as dataset
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', type=str, default='balanced_tree')
+parser.add_argument('--data', type=str, default='balanced_tree', \
+                    help='balanced_tree | balanced_treev2 | barbell')
 parser.add_argument('--result_path', type=str, default=None)
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--lr', type=float, default=1e-5)
@@ -120,7 +121,13 @@ if __name__ == '__main__':
     else:
         if opt.data == 'balanced_tree':
             G, tweets, val_tweets, true_param, true_member = \
-                    dataset.balanced_tree(r=3,h=4,h_thr=[2,4],path=result_PATH)
+                    dataset.balanced_tree(r=3,h=3,h_thr=[2],path=result_PATH)
+        if opt.data == 'balanced_treev2':
+            G, tweets, val_tweets, true_param, true_member = \
+                    dataset.balanced_treev2(tr=3,r=2,h=3,path=result_PATH)
+        if opt.data == 'barbell':
+            G, tweets, val_tweets, true_param, true_member = \
+                    dataset.barbell(tr=3,m1=5,m2=2,path=result_PATH)
         with open(data_path, 'wb') as datafile:
             pickle.dump({'G': G, 'tweets': tweets, 'val_tweets':val_tweets, \
                         'true_param':true_param, 'true_member':true_member}, datafile)
@@ -250,3 +257,7 @@ if __name__ == '__main__':
     color_map = np.array(color_map)
     mixed_color = np.matmul(mixed_membership, color_map)
     dataset.draw_net(G,mixed_color,result_PATH,filename="mixed_membership")
+    argmax_color = color_map[mixed_membership.argmax(1),:]
+    dataset.draw_net(G,argmax_color,result_PATH,filename="max_membership")
+    gamma_color = color_map[np.array(parameter["gamma"]).argmax(1),:]
+    dataset.draw_net(G,gamma_color,result_PATH,filename="vi_membership")

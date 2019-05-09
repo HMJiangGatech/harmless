@@ -188,6 +188,119 @@ def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
         layer = new_layer
     return G, seq_train, seq_val, true_param, true_member
 
+@generaldeco
+def balanced_treev2(tr=3,r=5,h=3,T=100):
+    """
+    tr: number of subtrees
+    r: number of rays
+    h: depth of tree
+    style: 0 -- cluster based on h_thr
+    """
+    G = nx.Graph()
+    seq_train = []
+    seq_val = []
+    true_param = []
+    true_member = []
+
+    member_id = -1
+    node_id = -1
+
+    tr_nodes=[]
+    for t in range(tr):
+        node_id += 1
+        member_id += 1
+        G.add_node(node_id)
+        for pr_tr in tr_nodes:
+            G.add_edge(pr_tr,node_id)
+        tr_nodes += [node_id]
+
+        layer = [node_id]
+        mu = random.uniform(0.5,0.85)
+        alpha = random.uniform(0.5,0.85)
+        omega = random.uniform(2,6)
+        sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
+        seq_train += [sequence]
+        seq_val += [target]
+        true_param += [param]
+        true_member += [member_id]
+        for i in range(h):
+            new_layer = []
+            for rootnode in layer:
+                for j in range(r):
+                    node_id += 1
+                    G.add_node(node_id)
+                    G.add_edge(rootnode,node_id)
+                    new_layer += [node_id]
+                    sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
+                    seq_train += [sequence]
+                    seq_val += [target]
+                    true_param += [param]
+                    true_member += [member_id]
+            layer = new_layer
+    return G, seq_train, seq_val, true_param, true_member
+
+
+@generaldeco
+def barbell(tr=3,m1=5,m2=2,T=100):
+    """
+    tr: number of subtrees
+    r: number of rays
+    h: depth of tree
+    style: 0 -- cluster based on h_thr
+    """
+    G = nx.Graph()
+    seq_train = []
+    seq_val = []
+    true_param = []
+    true_member = []
+
+    member_id = -1
+    node_id = -1
+
+    tr_nodes=[]
+    for t in range(tr):
+        node_id += 1
+        member_id += 1
+        G.add_node(node_id)
+        for pr_tr in tr_nodes:
+            G.add_edge(pr_tr,node_id)
+        tr_nodes += [node_id]
+
+        mu = random.uniform(0.15,0.85)
+        alpha = random.uniform(0.15,0.85)
+        omega = random.uniform(1,10)
+        sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
+        seq_train += [sequence]
+        seq_val += [target]
+        true_param += [param]
+        true_member += [member_id]
+
+
+
+
+
+        for i in range(m2):
+            node_id += 1
+            G.add_node(node_id)
+            G.add_edge(node_id-1,node_id)
+            sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
+            seq_train += [sequence]
+            seq_val += [target]
+            true_param += [param]
+            true_member += [member_id]
+        tr_root = node_id
+        for i in range(m1):
+            node_id += 1
+            G.add_node(node_id)
+            for j in range(tr_root,node_id):
+                G.add_edge(j,node_id)
+            sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
+            seq_train += [sequence]
+            seq_val += [target]
+            true_param += [param]
+            true_member += [member_id]
+
+    return G, seq_train, seq_val, true_param, true_member
 
 
 

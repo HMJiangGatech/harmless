@@ -18,6 +18,8 @@ import numpy as np
 import random
 import json
 import math
+import copy
+import pickle
 from scipy.special import digamma
 import networkx as nx
 
@@ -106,12 +108,31 @@ if __name__ == '__main__':
 
     print('Loading data...')
 
-    if opt.data == 'balanced_tree':
-        G, tweets, val_tweets, true_param = dataset.balanced_tree(r=3,h=3,path=result_PATH)
-        G_matrix = nx.to_numpy_matrix(G)
-        G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
+    data_path = os.path.join(result_PATH,'data.pkl')
+    if os.path.exists(data_path):
+        with open(data_path, 'rb') as datafile:
+            data_dictionary=pickle.load(datafile)
+        G = data_dictionary['G']
+        tweets = data_dictionary['tweets']
+        val_tweets = data_dictionary['val_tweets']
+        true_param = data_dictionary['true_param']
+        true_member = data_dictionary['true_member']
+    else:
+        if opt.data == 'balanced_tree':
+            G, tweets, val_tweets, true_param, true_member = \
+                    dataset.balanced_tree(r=3,h=4,h_thr=[2,4],path=result_PATH)
+        with open(data_path, 'wb') as datafile:
+            pickle.dump({'G': G, 'tweets': tweets, 'val_tweets':val_tweets, \
+                        'true_param':true_param, 'true_member':true_member}, datafile)
+    G_matrix = nx.to_numpy_matrix(G)
+    G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
 
-    T = max(val_tweets)*1.05
+    T_max = max(val_tweets)*1.05
+    for i in tweets:
+        for j in range(len(i)):
+            i[j] /= T_max
+    for i in range(len(val_tweets)):
+        val_tweets[i] /= T_max
 
     result_PATH = os.path.join(result_PATH,(opt.result_path+"_" if opt.result_path is not None else "")+'lr'+str(opt.lr)+'_innerlr'+str(opt.inner_lr) \
                 +'_K'+str(opt.K)+'_pretrain'+str(opt.pretrain_iter)+'_iter'+str(opt.max_iter) \
@@ -134,11 +155,11 @@ if __name__ == '__main__':
     data = {'matrix': G_matrix, 'G': G, 'tweets': tweets, 'val_tweets': val_tweets }
 
     print('Initializing...')
-    parameter, hawkes_models = initialize(data, alpha0, K, T, method, device, opt.lr, opt.inner_lr, opt.init_theta)
+    parameter, hawkes_models = initialize(data, alpha0, K, 1, method, device, opt.lr, opt.inner_lr, opt.init_theta)
 
     parameter = pretrain(data, parameter, pretrain_iter, opt.lr)
 
-#    parameter_list = []
+    # parameter_list = []
     loss_list = []
     eval_list = []
     #%%
@@ -151,7 +172,7 @@ if __name__ == '__main__':
         if error_flag:
             break
 
-#        parameter_list.append(parameter.copy())
+        # parameter_list.append(parameter.copy())
         loss_list.append(loss)
 
         print('Iteration:', it, 'Loss:', loss)
@@ -197,15 +218,35 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     plt.plot(eval_list)
-    plt.show()
+    plt.savefig(fname=os.path.join(result_PATH, "loss.pdf"), bbox_inches='tight',format="pdf", dpi = 300)
+    plt.close()
 
-#%%
+    #%%
 
     for delta_T, fpr, tpr in zip(delta_T_list, fpr_list, tpr_list):
         plt.plot(fpr, tpr, label='$\Delta T$='+str(delta_T))
     plt.legend(fontsize=15)
-    plt.show()
+    plt.savefig(fname=os.path.join(result_PATH, "roc.pdf"), bbox_inches='tight',format="pdf", dpi = 300)
+    plt.close()
 
     plt.plot(delta_T_list, auc_list)
     plt.ylim([0,1])
-    plt.show()
+    plt.savefig(fname=os.path.join(result_PATH, "auc.pdf"), bbox_inches='tight',format="pdf", dpi = 300)
+    plt.close()
+
+    # draw membership
+    mixed_membership = copy.copy(parameter["alpha"])
+    num_cluster = len(mixed_membership[0])
+    for i in mixed_membership:
+        _sum = sum(i)
+        for j in range(num_cluster):
+            i[j] /= _sum
+    mixed_membership = np.array(mixed_membership)
+    if num_cluster > 10:
+        print("Warning! Don't have enough colors, random generate color map")
+        color_map = [(random.random(),random.random(),random.random()) for i in range(num_cluster)]
+    else:
+        color_map = plt.get_cmap('tab10').colors[:num_cluster]
+    color_map = np.array(color_map)
+    mixed_color = np.matmul(mixed_membership, color_map)
+    dataset.draw_net(G,mixed_color,result_PATH,filename="mixed_membership")

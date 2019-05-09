@@ -32,7 +32,7 @@ def get_hawkes_data(mu0,alpha0,omega0,T,var=0.05, max_len = 200):
     sequence.pop()
     return sequence, target, (mu, alpha, omega)
 
-def draw_net(G,true_param,path,filename="network"):
+def draw_net(G,clrs,path,filename="network"):
 
         # Get Node Positions
         pos=nx.kamada_kawai_layout(G)
@@ -91,10 +91,10 @@ def draw_net(G,true_param,path,filename="network"):
             node_trace['y'] += tuple([y])
         # Color Node Points
         for node, adjacencies in enumerate(G.adjacency()):
-            param = true_param[node]
-            param = (round(param[0]*255),round(param[1]*255),round(param[2]/10*255))
-            node_trace['marker']['color'] += tuple(['rgb'+str(param)]) #tuple([len(adjacencies[1])])
-            node_info = 'rgb'+str(param)
+            clr = clrs[node]
+            clr = (round(clr[0]*255),round(clr[1]*255),round(clr[2]*255))
+            node_trace['marker']['color'] += tuple(['rgb'+str(clr)]) #tuple([len(adjacencies[1])])
+            node_info = 'rgb'+str(clr)
             node_trace['text']+=tuple([node_info])
         # Create Network Graph
         fig = go.Figure(data=[edge_trace, node_trace],
@@ -118,45 +118,62 @@ def draw_net(G,true_param,path,filename="network"):
 
 def generaldeco(func):
     def wrapper(*args, draw=True, path="./", **kwargs):
-        G, seq_train, seq_val, true_param = func(*args, **kwargs)
+        G, seq_train, seq_val, true_param, true_member = func(*args, **kwargs)
         if draw:
-            draw_net(G,true_param,path)
-        return G, seq_train, seq_val, true_param
-    return wrapper
+            import copy
+            clrs = np.array(copy.copy(true_param))
+            clrs[:,2] /= 10
+            draw_net(G,clrs,path)
 
+            num_cluster = max(true_member)+1
+            if num_cluster > 10:
+                print("Warning! Don't have enough colors, random generate color map")
+                color_map = [(random.random(),random.random(),random.random()) for i in range(num_cluster)]
+            else:
+                color_map = plt.get_cmap('tab10').colors[:num_cluster]
+            color_map = np.array(color_map)
+            clrs = color_map[true_member,:]
+            draw_net(G,clrs,path,filename="true_membership")
+        return G, seq_train, seq_val, true_param, true_member
+    return wrapper
 
 @generaldeco
 def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
     """
     r: number of rays
     h: depth of tree
-    style: 0 -- each depth is a cluster
-           1 -- leaf nodes is a cluster
-           2 -- set a depth threshold
+    style: 0 -- cluster based on h_thr
     """
-    if style==2 and h_thr is None:
-        h_thr = h-2
+    if style==0:
+        if h_thr is None:
+            h_thr = list(range(h))
+        elif h_thr.__class__ is int:
+            h_thr = [h_thr]
     G = nx.Graph()
     seq_train = []
     seq_val = []
     true_param = []
+    true_member = []
+    member_id = 0
 
     node_id = 0
     G.add_node(0)
     layer = [0]
-    mu = random.uniform(0.5,0.9)
-    alpha = random.uniform(0.5,0.9)
-    omega = random.uniform(5,6)
+    mu = random.uniform(0.5,0.85)
+    alpha = random.uniform(0.5,0.85)
+    omega = random.uniform(2,6)
     sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
     seq_train += [sequence]
     seq_val += [target]
     true_param += [param]
+    true_member += [member_id]
     for i in range(h):
         new_layer = []
-        if style==0 or (style==1 and i==(h-1)) or (style==1 and i==(h_thr-1)):
+        if style==0 and (i in h_thr):
             mu = random.uniform(0.5,0.85)
             alpha = random.uniform(0.5,0.85)
             omega = random.uniform(2,6)
+            member_id += 1
         for rootnode in layer:
             for j in range(r):
                 node_id += 1
@@ -167,8 +184,9 @@ def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
                 seq_train += [sequence]
                 seq_val += [target]
                 true_param += [param]
+                true_member += [member_id]
         layer = new_layer
-    return G, seq_train, seq_val, true_param
+    return G, seq_train, seq_val, true_param, true_member
 
 
 

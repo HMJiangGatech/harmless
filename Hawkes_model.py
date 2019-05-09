@@ -203,6 +203,7 @@ class Hawkes_models():
         test_level = 0.5
         self.num_test = int(self.N*test_level)
         self.num_val = self.N - self.num_test
+        np.random.seed(101)
         indexes = np.random.permutation(self.N)
         self.index_val = indexes[:self.num_val]
         self.index_test = indexes[self.num_val:]

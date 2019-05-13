@@ -26,7 +26,7 @@ from update_param import *
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', type=str, default='linkedin')
+parser.add_argument('--data', type=str, default='911same')
 parser.add_argument('--result_path', type=str, default='../result')
 parser.add_argument('--read_checkpoint', type=str, default=None)#'../result/our_checkpoint/linkedin_seed1_lr0.01_innerlr0.01_K2_pretrain0_iter10_method_maml_init_random.txt')
 parser.add_argument('--seed', type=int, default=1)
@@ -126,6 +126,16 @@ if __name__ == '__main__':
     elif opt.data == 'stackoverflow':
         PATH = 'data/stackoverflow'
         G, tweets, val_tweets = load_overflow_data(PATH, False)
+        G_matrix = nx.to_numpy_matrix(G)
+        G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
+    elif opt.data == '911':
+        PATH = 'data/911'
+        G, tweets, val_tweets = read_911_data(PATH)
+        G_matrix = nx.to_numpy_matrix(G)
+        G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
+    elif opt.data == '911same':
+        PATH = 'data/911'
+        G, tweets, val_tweets = read_911_data_sameregion(PATH)
         G_matrix = nx.to_numpy_matrix(G)
         G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
 

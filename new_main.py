@@ -37,7 +37,7 @@ import generator as dataset
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, default='balanced_tree', \
-                    help='balanced_tree | balanced_treev2 | barbell')
+                    help='balanced_tree | balanced_treev2 | barbell | mmb | mmb_hard')
 parser.add_argument('--result_path', type=str, default=None)
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--lr', type=float, default=1e-5)
@@ -46,7 +46,11 @@ parser.add_argument('--K', type=int, default=2)
 parser.add_argument('--max_iter', type=int, default=1000)
 parser.add_argument('--pretrain_iter', type=int, default=0)
 parser.add_argument('--method', type=str, default='maml', help='mle | maml | fomaml | reptile')
-parser.add_argument('--init_theta', type=str, default='random', help='uniform | random ')
+parser.add_argument('--init_theta', type=str, default='uniform', help='uniform | random ')
+parser.add_argument('--hardgamma', action='store_true', help='use hard gamma in VI')
+## mmb
+parser.add_argument('--mmb_nodes', type=int, default=50)
+parser.add_argument('--mmb_clusters', type=int, default=3)
 
 opt = parser.parse_args()
 #%%
@@ -70,8 +74,12 @@ def initialize(data, alpha0, K, T, method, device, lr, inner_lr, init_theta):
                  'K': K}
 
     N = len(tweets)
-    # parameter['alpha'] = alpha0.copy()
-    parameter['gamma'] = np.random.dirichlet(parameter['alpha0'], size=(N))
+    # parameter['alpha'] = np.random.dirichlet(parameter['alpha0'], size=(N))#alpha0.copy()
+    parameter['alpha'] = np.ones([N,K])*2*N/K
+    # parameter['gamma'] = np.random.dirichlet(parameter['alpha0'], size=(N))
+    parameter['gamma'] = np.ones([N,K])*2*N/K
+    if opt.hardgamma:
+        parameter['gamma'] = (parameter['gamma']>=np.expand_dims(parameter['gamma'].max(1),axis=1)).astype(float)
     # parameter['gamma'] = np.exp(np.random.normal(size=(N,K)))
     # parameter['gamma'] = parameter['gamma']/np.sum(parameter['gamma'], axis=-1, keepdims=True)
 
@@ -118,19 +126,26 @@ if __name__ == '__main__':
         val_tweets = data_dictionary['val_tweets']
         true_param = data_dictionary['true_param']
         true_member = data_dictionary['true_member']
+        G_pos = data_dictionary['G_pos']
     else:
         if opt.data == 'balanced_tree':
-            G, tweets, val_tweets, true_param, true_member = \
+            G, tweets, val_tweets, true_param, true_member, G_pos = \
                     dataset.balanced_tree(r=3,h=3,h_thr=[2],path=result_PATH)
         if opt.data == 'balanced_treev2':
-            G, tweets, val_tweets, true_param, true_member = \
+            G, tweets, val_tweets, true_param, true_member, G_pos = \
                     dataset.balanced_treev2(tr=3,r=2,h=3,path=result_PATH)
         if opt.data == 'barbell':
-            G, tweets, val_tweets, true_param, true_member = \
+            G, tweets, val_tweets, true_param, true_member, G_pos = \
                     dataset.barbell(tr=3,m1=5,m2=2,path=result_PATH)
+        if opt.data == 'mmb':
+            G, tweets, val_tweets, true_param, true_member, G_pos = \
+                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,hardedge=False,path=result_PATH)
+        if opt.data == 'mmb_hard':
+            G, tweets, val_tweets, true_param, true_member, G_pos = \
+                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,hardedge=True,path=result_PATH)
         with open(data_path, 'wb') as datafile:
             pickle.dump({'G': G, 'tweets': tweets, 'val_tweets':val_tweets, \
-                        'true_param':true_param, 'true_member':true_member}, datafile)
+                        'true_param':true_param, 'true_member':true_member, 'G_pos':G_pos}, datafile)
     G_matrix = nx.to_numpy_matrix(G)
     G_matrix = np.asarray(G_matrix) + np.eye(len(G_matrix))
 
@@ -143,7 +158,7 @@ if __name__ == '__main__':
 
     result_PATH = os.path.join(result_PATH,(opt.result_path+"_" if opt.result_path is not None else "")+'lr'+str(opt.lr)+'_innerlr'+str(opt.inner_lr) \
                 +'_K'+str(opt.K)+'_pretrain'+str(opt.pretrain_iter)+'_iter'+str(opt.max_iter) \
-                + '_method_'+opt.method+'_init_'+opt.init_theta)
+                + '_method_'+opt.method+'_init_'+opt.init_theta+'_hardgamma_'+str(opt.hardgamma))
     if not os.path.isdir(result_PATH):
         os.makedirs(result_PATH)
 
@@ -174,7 +189,7 @@ if __name__ == '__main__':
 
         print('Performing update', it)
 
-        error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr)
+        error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma)
 
         if error_flag:
             break
@@ -256,8 +271,9 @@ if __name__ == '__main__':
         color_map = plt.get_cmap('tab10').colors[:num_cluster]
     color_map = np.array(color_map)
     mixed_color = np.matmul(mixed_membership, color_map)
-    dataset.draw_net(G,mixed_color,result_PATH,filename="mixed_membership")
+
     argmax_color = color_map[mixed_membership.argmax(1),:]
-    dataset.draw_net(G,argmax_color,result_PATH,filename="max_membership")
+    dataset.draw_net(G,argmax_color,result_PATH,filename="max_membership",pos=G_pos,html=False)
     gamma_color = color_map[np.array(parameter["gamma"]).argmax(1),:]
-    dataset.draw_net(G,gamma_color,result_PATH,filename="vi_membership")
+    dataset.draw_net(G,gamma_color,result_PATH,filename="vi_membership",pos=G_pos,html=False)
+    dataset.draw_net(G,mixed_color,result_PATH,filename="mixed_membership",pos=G_pos,html=False)

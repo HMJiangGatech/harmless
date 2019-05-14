@@ -32,10 +32,11 @@ def get_hawkes_data(mu0,alpha0,omega0,T,var=0.05, max_len = 200):
     sequence.pop()
     return sequence, target, (mu, alpha, omega)
 
-def draw_net(G,clrs,path,filename="network"):
+def draw_net(G,clrs,path,filename="network",pos=None,html=True):
 
         # Get Node Positions
-        pos=nx.kamada_kawai_layout(G)
+        if pos is None:
+            pos=nx.kamada_kawai_layout(G)
         dmin=1
         ncenter=0
         for n in pos:
@@ -113,17 +114,32 @@ def draw_net(G,clrs,path,filename="network"):
                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
         if not os.path.exists('images'):
             os.mkdir('images')
-        plotly.offline.plot(fig, filename=os.path.join(path,filename+'.html'), auto_open=False)
+        if html:
+            plotly.offline.plot(fig, filename=os.path.join(path,filename+'.html'), auto_open=False)
         pio.write_image(fig, os.path.join(path,filename+'.pdf'))
 
 def generaldeco(func):
     def wrapper(*args, draw=True, path="./", **kwargs):
         G, seq_train, seq_val, true_param, true_member = func(*args, **kwargs)
+        if func.__name__ in ["mmb"]:
+            dist = {}
+            for node1 in list(G.nodes):
+                dist[node1] = {}
+                for node2 in list(G.nodes):
+                    if node1 == node2:
+                        continue
+                    if true_member[node1] == true_member[node2]:
+                        dist[node1][node2] = 0.5
+                    else:
+                        dist[node1][node2] = 1
+            pos=nx.kamada_kawai_layout(G, dist = dist)
+        else:
+            pos=nx.kamada_kawai_layout(G)
         if draw:
             import copy
             clrs = np.array(copy.copy(true_param))
             clrs[:,2] /= 10
-            draw_net(G,clrs,path)
+            draw_net(G,clrs,path,pos=pos)
 
             num_cluster = max(true_member)+1
             if num_cluster > 10:
@@ -133,8 +149,8 @@ def generaldeco(func):
                 color_map = plt.get_cmap('tab10').colors[:num_cluster]
             color_map = np.array(color_map)
             clrs = color_map[true_member,:]
-            draw_net(G,clrs,path,filename="true_membership")
-        return G, seq_train, seq_val, true_param, true_member
+            draw_net(G,clrs,path,filename="true_membership",pos=pos,html=False)
+        return G, seq_train, seq_val, true_param, true_member, pos
     return wrapper
 
 @generaldeco
@@ -159,9 +175,9 @@ def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
     node_id = 0
     G.add_node(0)
     layer = [0]
-    mu = random.uniform(0.5,0.85)
-    alpha = random.uniform(0.5,0.85)
-    omega = random.uniform(2,6)
+    mu = random.uniform(0.15,0.85)
+    alpha = random.uniform(0.15,0.85)
+    omega = random.uniform(1,10)
     sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
     seq_train += [sequence]
     seq_val += [target]
@@ -170,9 +186,9 @@ def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
     for i in range(h):
         new_layer = []
         if style==0 and (i in h_thr):
-            mu = random.uniform(0.5,0.85)
-            alpha = random.uniform(0.5,0.85)
-            omega = random.uniform(2,6)
+            mu = random.uniform(0.15,0.85)
+            alpha = random.uniform(0.15,0.85)
+            omega = random.uniform(1,10)
             member_id += 1
         for rootnode in layer:
             for j in range(r):
@@ -215,9 +231,9 @@ def balanced_treev2(tr=3,r=5,h=3,T=100):
         tr_nodes += [node_id]
 
         layer = [node_id]
-        mu = random.uniform(0.5,0.85)
-        alpha = random.uniform(0.5,0.85)
-        omega = random.uniform(2,6)
+        mu = random.uniform(0.15,0.85)
+        alpha = random.uniform(0.15,0.85)
+        omega = random.uniform(1,10)
         sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
         seq_train += [sequence]
         seq_val += [target]
@@ -299,6 +315,73 @@ def barbell(tr=3,m1=5,m2=2,T=100):
             seq_val += [target]
             true_param += [param]
             true_member += [member_id]
+
+    return G, seq_train, seq_val, true_param, true_member
+
+@generaldeco
+def mmb(nodes=20,clusters=3,hardedge=False,T=100):
+    """
+    nodes: number of nodes
+    clusters: number of clusters
+    hardedge: true use true membership to draw the edges
+              false use mixed_membership resample member to draw the edges
+    """
+    G = nx.Graph()
+    seq_train = []
+    seq_val = []
+    true_param = []
+    true_member = []
+
+    cluster_param = []
+    for k in range(clusters):
+        mu = random.uniform(0.15,0.85)
+        alpha = random.uniform(0.15,0.85)
+        omega = random.uniform(1,10)
+        cluster_param += [(mu,alpha,omega)]
+
+    # alpha
+    alpha0 = np.random.dirichlet(np.ones(clusters))+0.3
+
+    mixed_membership = [] # pi
+    for node_id in range(nodes):
+        G.add_node(node_id)
+        mixed_membership += [np.random.dirichlet(alpha0)]
+        member_id = np.random.multinomial(1,mixed_membership[-1]).argmax()
+        true_member += [member_id]
+
+        mu,alpha,omega = cluster_param[member_id]
+        sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
+        seq_train += [sequence]
+        seq_val += [target]
+        true_param += [param]
+
+    # B
+    B = np.eye(clusters)
+    if hardedge:
+        populations = [sum([j==i for j in true_member]) for i in range(clusters)]
+    else:
+        populations = alpha0/sum(alpha0)*nodes
+    for i in range(clusters):
+        for j in range(clusters):
+            if i==j:
+                continue
+            B[i,j] = 10/nodes/nodes
+    B = (B.T+B)/2
+    for i in range(clusters):
+        B[i,i] = 7/populations[i]
+        if B[i,i]>1:
+            print("Warning! Increase number of nodes.")
+            B[i,i]=0.95
+    for node_id1 in range(nodes):
+        for node_id2 in range(node_id1+1,nodes):
+            if hardedge:
+                z1 = true_member[node_id1]
+                z2 = true_member[node_id2]
+            else:
+                z1 = np.random.multinomial(1,mixed_membership[node_id1]).argmax()
+                z2 = np.random.multinomial(1,mixed_membership[node_id2]).argmax()
+            if np.random.binomial(1,B[z1,z2]):
+                G.add_edge(node_id1,node_id2)
 
     return G, seq_train, seq_val, true_param, true_member
 

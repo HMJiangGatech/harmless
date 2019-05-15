@@ -156,7 +156,7 @@ def load_linkedin_data(PATH):
         else:
             seqs[user_id] = [time]
             seqs_org[user_id] = [org]
-
+    print('min_time', min_time, 'max_time', max_time)
     G = nx.Graph()
 
     ## add edge according to be in the same company at the same time
@@ -195,9 +195,9 @@ def load_linkedin_data(PATH):
         G.remove_node(node)
 
     ########### make the gragh smaller #############
-    for node in G.nodes():
-        if node>1000:
-            G.remove_node(node)
+#    for node in G.nodes():
+#        if node>1000:
+#            G.remove_node(node)
 #    nx.draw(G)
     ################################################
 

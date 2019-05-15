@@ -198,7 +198,11 @@ def get_roc_auc(delta_T):
     
     return roc_auc, fpr, tpr
         
-delta_T_list = np.arange(0.025,0.2,0.025)
+delta_T_list = list(np.arange(1,11,1))
+delta_T_list = list(np.arange(0.25,1,0.25))+delta_T_list
+delta_T_list = [item/47.7753 for item in delta_T_list]
+
+
 auc_list = []
 fpr_list = []
 tpr_list = []

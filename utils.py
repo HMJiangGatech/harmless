@@ -7,6 +7,9 @@ Created on Tue Apr 16 12:50:39 2019
 """
 import os
 
+import time
+import datetime
+
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -336,5 +339,70 @@ def read_911_data(PATH):
             seq_list.append(val[:-1])
             val_seq_list.append(val[-1])
     return G, seq_list, val_seq_list
+
+def read_911_data_sameregion(PATH):
+    G = nx.Graph()
+    path = os.path.join(PATH, '911.csv')
+
+    with open(path, 'r') as f:
+        data = f.readlines()
+    time_list = []
+    zip_time_dict = {}
+
+    EMS = 'EMS'
+    TRAFFIC = 'TRAFFIC'
+
+    for i in range(len(data)):
+        if i > 0:
+            _,_,_,zip_code, title,time_str,_,_,_ = data[i].strip('\n').split(',')
+            if len(zip_code) == 5 and EMS in title:
+                zip_code, timestamp = int(zip_code), time.mktime(datetime.datetime.strptime(time_str, "%m/%d/%y %H:%M").timetuple())
+                if timestamp >= 0 and timestamp <= 1.59e9:
+                    time_list.append(timestamp)
+                    if zip_code in zip_time_dict:
+                        zip_time_dict[zip_code].append(timestamp)
+                    else:
+                        zip_time_dict[zip_code] = [timestamp]
+                    
+
+
+    for zip_code1 in zip_time_dict:
+        for zip_code2 in zip_time_dict:
+            if (zip_code1 != zip_code2) and (str(zip_code1)[:3] == str(zip_code2)[:3]):
+                G.add_edge(zip_code1, zip_code2)
+
+    min_time = np.min(time_list)
+    max_time = np.max(time_list)
+
+    print(min_time)
+    print(max_time)
+    abs_max_time = np.max(time_list) - min_time
+
+
+    # normalize time and add node to G
+    for key, val in zip_time_dict.items():
+        zip_time_dict[key] = [(time-min_time)/abs_max_time for time in val]
+        if not G.has_node(key) and (len(val) >= 2 and len(val) <= 7):
+            G.add_node(key)
+
+    # remove nodes in Graph
+    node_to_remove = []
+    for node in list(G.nodes()):
+        if node not in zip_time_dict and G.has_node(node):
+            node_to_remove.append(node)
+        elif len(zip_time_dict[node])  < 2 or len(zip_time_dict[node]) > 7 and G.has_node(node):
+            node_to_remove.append(node)
+    for node in node_to_remove:
+        G.remove_node(node)
+
+
+    seq_list = []
+    val_seq_list = []
+    for key, val in zip_time_dict.items():
+        if len(val) >= 2 and len(val) <= 7:
+            seq_list.append(val[:-1])
+            val_seq_list.append(val[-1])
+    return G, seq_list, val_seq_list
+
 
 

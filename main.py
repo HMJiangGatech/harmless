@@ -26,14 +26,14 @@ from update_param import *
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', type=str, default='911same')
+parser.add_argument('--data', type=str, default='linkedin')
 parser.add_argument('--result_path', type=str, default='../result')
 parser.add_argument('--read_checkpoint', type=str, default=None)#'../result/our_checkpoint/linkedin_seed1_lr0.01_innerlr0.01_K2_pretrain0_iter10_method_maml_init_random.txt')
 parser.add_argument('--seed', type=int, default=1)
-parser.add_argument('--lr', type=float, default=1e-2)
-parser.add_argument('--inner_lr', type=float, default=1e-2)
-parser.add_argument('--K', type=int, default=2)
-parser.add_argument('--max_iter', type=int, default=10)
+parser.add_argument('--lr', type=float, default=2e-1)
+parser.add_argument('--inner_lr', type=float, default=2e-1)
+parser.add_argument('--K', type=int, default=3)
+parser.add_argument('--max_iter', type=int, default=1000)
 parser.add_argument('--pretrain_iter', type=int, default=0)
 parser.add_argument('--method', type=str, default='maml', help='mle | maml | fomaml | reptile')
 parser.add_argument('--init_theta', type=str, default='random', help='uniform | random ')
@@ -182,7 +182,14 @@ if __name__ == '__main__':
     
     #%%
     
-    delta_T_list = np.arange(0.025,0.2,0.025)
+#change this to your data    
+    if opt.data == 'linkedin':
+        delta_T_list = list(np.arange(1,11,1))
+        delta_T_list = list(np.arange(0.25,1,0.25))+delta_T_list
+        delta_T_list = [item/47.7753 for item in delta_T_list]
+    else:
+        delta_T_list = np.arange(0.025,0.2,0.025)
+
     auc_list = []
     fpr_list = []
     tpr_list = []

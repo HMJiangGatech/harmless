@@ -36,7 +36,7 @@ import generator as dataset
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', type=str, default='balanced_tree', \
+parser.add_argument('--data', type=str, default='mmb_hard', \
                     help='balanced_tree | balanced_treev2 | barbell | mmb | mmb_hard')
 parser.add_argument('--result_path', type=str, default=None)
 parser.add_argument('--seed', type=int, default=1)
@@ -49,8 +49,10 @@ parser.add_argument('--method', type=str, default='maml', help='mle | maml | fom
 parser.add_argument('--init_theta', type=str, default='uniform', help='uniform | random ')
 parser.add_argument('--hardgamma', action='store_true', help='use hard gamma in VI')
 ## mmb
-parser.add_argument('--mmb_nodes', type=int, default=50)
+parser.add_argument('--mmb_nodes', type=int, default=100)
 parser.add_argument('--mmb_clusters', type=int, default=3)
+
+parser.add_argument('--verbose', action='store_true', help='verbose')
 
 opt = parser.parse_args()
 #%%
@@ -74,10 +76,10 @@ def initialize(data, alpha0, K, T, method, device, lr, inner_lr, init_theta):
                  'K': K}
 
     N = len(tweets)
-    # parameter['alpha'] = np.random.dirichlet(parameter['alpha0'], size=(N))#alpha0.copy()
-    parameter['alpha'] = np.ones([N,K])*2*N/K
-    # parameter['gamma'] = np.random.dirichlet(parameter['alpha0'], size=(N))
-    parameter['gamma'] = np.ones([N,K])*2*N/K
+    parameter['alpha'] = np.random.dirichlet(parameter['alpha0'], size=(N))#alpha0.copy()
+    # parameter['alpha'] = np.ones([N,K])*2*N/K
+    parameter['gamma'] = np.random.dirichlet(parameter['alpha0'], size=(N))
+    # parameter['gamma'] = np.ones([N,K])/K
     if opt.hardgamma:
         parameter['gamma'] = (parameter['gamma']>=np.expand_dims(parameter['gamma'].max(1),axis=1)).astype(float)
     # parameter['gamma'] = np.exp(np.random.normal(size=(N,K)))
@@ -189,7 +191,7 @@ if __name__ == '__main__':
 
         print('Performing update', it)
 
-        error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma)
+        error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma, verbose=opt.verbose)
 
         if error_flag:
             break

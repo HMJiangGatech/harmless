@@ -1,0 +1,2 @@
+# Baseline: MLE
+python new_main.py --data mmb_hard --method mle --K 3 --lr 0.005 --max_iter 300

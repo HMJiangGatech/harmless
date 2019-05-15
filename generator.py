@@ -365,10 +365,10 @@ def mmb(nodes=20,clusters=3,hardedge=False,T=100):
         for j in range(clusters):
             if i==j:
                 continue
-            B[i,j] = 10/nodes/nodes
+            B[i,j] = 1.5/nodes
     B = (B.T+B)/2
     for i in range(clusters):
-        B[i,i] = 7/populations[i]
+        B[i,i] = 10/populations[i]
         if B[i,i]>1:
             print("Warning! Increase number of nodes.")
             B[i,i]=0.95

@@ -52,7 +52,7 @@ def draw_net(G,clrs,path,filename="network",pos=None,html=True):
         edge_trace = go.Scatter(
             x=[],
             y=[],
-            line=dict(width=0.5,color='#888'),
+            line=dict(width=2,color='#888'),
             hoverinfo='none',
             mode='lines')
 
@@ -77,7 +77,7 @@ def draw_net(G,clrs,path,filename="network",pos=None,html=True):
                 # colorscale='YlGnBu',
                 # reversescale=True,
                 color=[],
-                size=10,
+                size=40,
                 # colorbar=dict(
                 #     thickness=15,
                 #     title='Node Connections',
@@ -129,10 +129,11 @@ def generaldeco(func):
                     if node1 == node2:
                         continue
                     if true_member[node1] == true_member[node2]:
-                        dist[node1][node2] = 0.5
+                        dist[node1][node2] = 0.6
                     else:
                         dist[node1][node2] = 1
             pos=nx.kamada_kawai_layout(G, dist = dist)
+            # pos=nx.kamada_kawai_layout(G)
         else:
             pos=nx.kamada_kawai_layout(G)
         if draw:
@@ -319,7 +320,7 @@ def barbell(tr=3,m1=5,m2=2,T=100):
     return G, seq_train, seq_val, true_param, true_member
 
 @generaldeco
-def mmb(nodes=20,clusters=3,hardedge=False,T=100):
+def mmb(nodes=20,clusters=3,bjk=1.5,bkk=10,hardedge=False,T=100):
     """
     nodes: number of nodes
     clusters: number of clusters
@@ -340,7 +341,7 @@ def mmb(nodes=20,clusters=3,hardedge=False,T=100):
         cluster_param += [(mu,alpha,omega)]
 
     # alpha
-    alpha0 = np.random.dirichlet(np.ones(clusters))+0.3
+    alpha0 = np.random.dirichlet(np.ones(clusters))+1
 
     mixed_membership = [] # pi
     for node_id in range(nodes):
@@ -365,10 +366,10 @@ def mmb(nodes=20,clusters=3,hardedge=False,T=100):
         for j in range(clusters):
             if i==j:
                 continue
-            B[i,j] = 1.5/nodes
+            B[i,j] = bjk/nodes
     B = (B.T+B)/2
     for i in range(clusters):
-        B[i,i] = 10/populations[i]
+        B[i,i] = bkk /populations[i]
         if B[i,i]>1:
             print("Warning! Increase number of nodes.")
             B[i,i]=0.95

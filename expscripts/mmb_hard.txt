@@ -3,4 +3,15 @@ python new_main.py --data mmb_hard --method mle --K 3 --lr 0.005 --max_iter 50
 python new_main.py --data mmb_hard --method mle --K 3 --lr 0.005 --max_iter 200
 
 # maml
-python new_main.py --data mmb_hard --method maml --K 3 --lr 0.005 --max_iter 200
+python new_main.py --data mmb_hard --method maml --K 3 --lr 0.005 --inner_lr 0.005 --max_iter 200
+
+# different settings
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 3 --bjk 1 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 6 --bjk 1 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 10 --bjk 1 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 3 --bjk 3 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 6 --bjk 3 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 10 --bjk 3 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 3 --bjk 6 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 6 --bjk 6 --method mle --lr 0.005 --max_iter 50 --seed 2
+python new_main.py --data mmb_hard --mmb_clusters 6 --K 10 --bjk 6 --method mle --lr 0.005 --max_iter 50 --seed 2

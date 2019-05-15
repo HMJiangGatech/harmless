@@ -49,8 +49,10 @@ parser.add_argument('--method', type=str, default='maml', help='mle | maml | fom
 parser.add_argument('--init_theta', type=str, default='uniform', help='uniform | random ')
 parser.add_argument('--hardgamma', action='store_true', help='use hard gamma in VI')
 ## mmb
-parser.add_argument('--mmb_nodes', type=int, default=100)
-parser.add_argument('--mmb_clusters', type=int, default=3)
+parser.add_argument('--mmb_nodes', type=int, default=50)
+parser.add_argument('--mmb_clusters', type=int, default=6)
+parser.add_argument('--bjk', type=float, default=1)
+parser.add_argument('--bkk', type=float, default=5)
 
 parser.add_argument('--verbose', action='store_true', help='verbose')
 
@@ -106,7 +108,8 @@ def initialize(data, alpha0, K, T, method, device, lr, inner_lr, init_theta):
 
 if __name__ == '__main__':
 
-    result_PATH = os.path.join('result/', opt.data+"_"+str(opt.seed))
+    result_PATH = os.path.join('result/', opt.data+"_Kt"+str(opt.mmb_clusters)+\
+                            "_bjk"+str(opt.bjk)+"_bkk"+str(opt.bkk)+"_"+str(opt.seed))
     if not os.path.isdir(result_PATH):
         os.makedirs(result_PATH)
 
@@ -141,10 +144,10 @@ if __name__ == '__main__':
                     dataset.barbell(tr=3,m1=5,m2=2,path=result_PATH)
         if opt.data == 'mmb':
             G, tweets, val_tweets, true_param, true_member, G_pos = \
-                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,hardedge=False,path=result_PATH)
+                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,bjk=opt.bjk,bkk=opt.bkk,hardedge=False,path=result_PATH)
         if opt.data == 'mmb_hard':
             G, tweets, val_tweets, true_param, true_member, G_pos = \
-                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,hardedge=True,path=result_PATH)
+                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,bjk=opt.bjk,bkk=opt.bkk,hardedge=True,path=result_PATH)
         with open(data_path, 'wb') as datafile:
             pickle.dump({'G': G, 'tweets': tweets, 'val_tweets':val_tweets, \
                         'true_param':true_param, 'true_member':true_member, 'G_pos':G_pos}, datafile)
@@ -190,6 +193,7 @@ if __name__ == '__main__':
     for it in range(num_iter):
 
         print('Performing update', it)
+        hawkes_models.show_param()
 
         error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma, verbose=opt.verbose)
 
@@ -259,23 +263,24 @@ if __name__ == '__main__':
     plt.close()
 
     # draw membership
-    mixed_membership = copy.copy(parameter["alpha"])
-    num_cluster = len(mixed_membership[0])
-    for i in mixed_membership:
-        _sum = sum(i)
-        for j in range(num_cluster):
-            i[j] /= _sum
-    mixed_membership = np.array(mixed_membership)
-    if num_cluster > 10:
-        print("Warning! Don't have enough colors, random generate color map")
-        color_map = [(random.random(),random.random(),random.random()) for i in range(num_cluster)]
-    else:
-        color_map = plt.get_cmap('tab10').colors[:num_cluster]
-    color_map = np.array(color_map)
-    mixed_color = np.matmul(mixed_membership, color_map)
+    if opt.verbose:
+        mixed_membership = copy.copy(parameter["alpha"])
+        num_cluster = len(mixed_membership[0])
+        for i in mixed_membership:
+            _sum = sum(i)
+            for j in range(num_cluster):
+                i[j] /= _sum
+        mixed_membership = np.array(mixed_membership)
+        if num_cluster > 10:
+            print("Warning! Don't have enough colors, random generate color map")
+            color_map = [(random.random(),random.random(),random.random()) for i in range(num_cluster)]
+        else:
+            color_map = plt.get_cmap('tab10').colors[:num_cluster]
+        color_map = np.array(color_map)
+        mixed_color = np.matmul(mixed_membership, color_map)
 
-    argmax_color = color_map[mixed_membership.argmax(1),:]
-    dataset.draw_net(G,argmax_color,result_PATH,filename="max_membership",pos=G_pos,html=False)
-    gamma_color = color_map[np.array(parameter["gamma"]).argmax(1),:]
-    dataset.draw_net(G,gamma_color,result_PATH,filename="vi_membership",pos=G_pos,html=False)
-    dataset.draw_net(G,mixed_color,result_PATH,filename="mixed_membership",pos=G_pos,html=False)
+        argmax_color = color_map[mixed_membership.argmax(1),:]
+        dataset.draw_net(G,argmax_color,result_PATH,filename="max_membership",pos=G_pos,html=False)
+        gamma_color = color_map[np.array(parameter["gamma"]).argmax(1),:]
+        dataset.draw_net(G,gamma_color,result_PATH,filename="vi_membership",pos=G_pos,html=False)
+        dataset.draw_net(G,mixed_color,result_PATH,filename="mixed_membership",pos=G_pos,html=False)

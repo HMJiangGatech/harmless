@@ -1,2 +1,6 @@
 # Baseline: MLE
-python new_main.py --data mmb_hard --method mle --K 3 --lr 0.005 --max_iter 300
+python new_main.py --data mmb_hard --method mle --K 3 --lr 0.005 --max_iter 50
+python new_main.py --data mmb_hard --method mle --K 3 --lr 0.005 --max_iter 200
+
+# maml
+python new_main.py --data mmb_hard --method maml --K 3 --lr 0.005 --max_iter 200

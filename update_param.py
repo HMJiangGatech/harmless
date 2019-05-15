@@ -19,7 +19,7 @@ def pre_update_parameter(data, parameter, lr):
     #alpha
     parameter['alpha'] = parameter['alpha0'] \
                         + np.sum(parameter['phi'], axis=1) \
-                        + np.sum(parameter['psi'], axis=1)
+                        + np.sum(parameter['psi'], axis=0)
 #    print('alpha', parameter['alpha'])
     print('alpha', np.argmax(parameter['alpha'], axis=1), np.std(np.argmax(parameter['alpha'], axis=1)))
 
@@ -78,7 +78,7 @@ def update_parameter(data, parameter, hawkes_models, lr):
     parameter['alpha'] = parameter['alpha0'] \
                         + parameter['gamma'] \
                         + np.sum(parameter['phi'], axis=1) \
-                        + np.sum(parameter['psi'], axis=1)
+                        + np.sum(parameter['psi'], axis=0)
 #    print('alpha', parameter['alpha'])
     print('alpha', np.std(np.argmax(parameter['alpha'], axis=1)))
     #gamma
@@ -110,14 +110,14 @@ def update_parameter(data, parameter, hawkes_models, lr):
     B_to_Y = expand_Y*log_B + (1-expand_Y)*log_1_B
     
     phi_right = np.sum(np.expand_dims(parameter['psi'], axis=-2)*B_to_Y, axis=-1)
-    parameter['phi'] = exp_digamma_alpha * np.exp(phi_right)
+    parameter['phi'] = np.expand_dims(exp_digamma_alpha, axis=1) * np.exp(phi_right)
     parameter['phi'] = parameter['phi']/np.sum(parameter['phi'], axis=-1, keepdims=True)
     
 #    print('phi', parameter['phi'])
     
     #psi
     psi_right = np.sum(np.expand_dims(parameter['phi'], axis=-1)*B_to_Y, axis=-2)
-    parameter['psi'] = exp_digamma_alpha * np.exp(psi_right)
+    parameter['psi'] = np.expand_dims(exp_digamma_alpha, axis=0) * np.exp(psi_right)
     parameter['psi'] = parameter['psi']/np.sum(parameter['psi'], axis=-1, keepdims=True)
 
 #    print('psi', parameter['psi'])

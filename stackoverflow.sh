@@ -10,7 +10,7 @@ nohup python main.py  --method reptile --lr 0.1 --inner_lr 0.1 --K 2 --max_iter 
 
 nohup python main.py  --method fomaml --lr 0.0004 --inner_lr 0.0004 --K 2 --max_iter 1000 --init_theta uniform &
 nohup python main.py  --method fomaml --lr 0.001 --inner_lr 0.001 --K 2 --max_iter 1000 --init_theta uniform &
-
+nohup python main.py  --method fomaml --lr 0.002 --inner_lr 0.002 --K 2 --max_iter 1000 --init_theta uniform &
 
 
 

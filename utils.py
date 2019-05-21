@@ -241,7 +241,11 @@ def load_overflow_data(PATH, isMath=True):
     for item in data:
         user1, user2, time = item.strip('\n').split(' ')
         user1, user2, time = int(user1), int(user2), int(time)
-        if isMath or (time >= 1.43e9 and time <= 1.44e9):
+        #if isMath or (time >= 0 and time <= 1.9e9):
+        if time >= 1.447e9 and time <= 1.449e9:
+        #stackoverflow
+        #if time >= 1.399e9 and time <= 1.9e9:
+        #mathoverflow
             time_list.append(time)
             G.add_edge(user1, user2)
             if user1 in user_time_dict:
@@ -250,33 +254,44 @@ def load_overflow_data(PATH, isMath=True):
                 user_time_dict[user1] = [time]
 
     min_time = np.min(time_list)
-    max_time = np.max(time_list) - min_time
+    max_time = np.max(time_list)
 
     print(min_time)
     print(max_time)
     max_time = np.max(time_list) - min_time
-
+    print(len(G.nodes()))
+    print(len(G.edges()))
     # normalize time and add node to G
     for key, val in user_time_dict.items():
         user_time_dict[key] = [(time-min_time)/max_time for time in val]
-        if not G.has_node(key) and (len(val) >= 6 and len(val) <= 7):
+        if not G.has_node(key) and (len(val) >= 2 and len(val) <= 10000):
             G.add_node(key)
 
     # remove nodes in Graph
     node_to_remove = []
     for node in list(G.nodes()):
-        if node not in user_time_dict and G.has_node(node):
+        if node not in user_time_dict:
             node_to_remove.append(node)
-        elif len(user_time_dict[node])  < 6 or len(user_time_dict[node]) > 7 and G.has_node(node):
+        elif len(user_time_dict[node])  < 2 or len(user_time_dict[node]) > 10000:
             node_to_remove.append(node)
+    
+    # node_to_remove += nx.isolates(G)
     for node in node_to_remove:
         G.remove_node(node)
+
+    # G.remove_nodes_from(nx.isolates(G))
+    node_to_remove = set(list(nx.isolates(G)))
+    for node in node_to_remove:
+        G.remove_node(node) 
+    assert(len(list(nx.isolates(G))) == 0)
+    print(len(G.nodes()))
+    print(len(G.edges()))
 
 
     seq_list = []
     val_seq_list = []
     for key, val in user_time_dict.items():
-        if len(val) >= 6 and len(val) <= 7:
+        if len(val) >= 2 and len(val) <= 10000 and key not in node_to_remove:
             seq_list.append(val[:-1])
             val_seq_list.append(val[-1])
     return G, seq_list, val_seq_list
@@ -340,6 +355,80 @@ def read_911_data(PATH):
             val_seq_list.append(val[-1])
     return G, seq_list, val_seq_list
 
+# def read_911_data_sameregion(PATH):
+#     G = nx.Graph()
+#     path = os.path.join(PATH, '911.csv')
+
+#     with open(path, 'r') as f:
+#         data = f.readlines()
+#     time_list = []
+#     zip_time_dict = {}
+
+#     EMS = 'EMS'
+#     TRAFFIC = 'TRAFFIC'
+    
+
+#     for i in range(len(data)):
+#         if i > 1:
+#             _,_,_,zip_code, title,time_str,_,_,_ = data[i].strip('\n').split(',')
+#             if len(zip_code) == 5 and TRAFFIC in title:
+#                 zip_code, timestamp = int(zip_code), time.mktime(datetime.datetime.strptime(time_str, "%m/%d/%y %H:%M").timetuple())
+#                 if timestamp >= 0 and timestamp <= 1.59e9:
+#                     time_list.append(timestamp)
+#                     if zip_code in zip_time_dict:
+#                         zip_time_dict[zip_code].append(timestamp)
+#                     else:
+#                         zip_time_dict[zip_code] = [timestamp]
+                    
+
+
+#     for zip_code1 in zip_time_dict:
+#         for zip_code2 in zip_time_dict:
+#             if (zip_code1 != zip_code2) and (str(zip_code1)[:3] == str(zip_code2)[:3]):
+#                 G.add_edge(zip_code1, zip_code2)
+
+#     min_time = np.min(time_list)
+#     max_time = np.max(time_list)
+
+#     print(min_time)
+#     print(max_time)
+#     abs_max_time = np.max(time_list) - min_time
+
+
+#     # normalize time and add node to G
+#     for key, val in zip_time_dict.items():
+#         zip_time_dict[key] = [(time-min_time)/abs_max_time for time in val]
+#         if not G.has_node(key) and (len(val) >= 2 and len(val) <= 800):
+#             G.add_node(key)
+
+#     # remove nodes in Graph
+#     node_to_remove = []
+#     for node in list(G.nodes()):
+#         if node not in zip_time_dict and G.has_node(node):
+#             node_to_remove.append(node)
+#         elif len(zip_time_dict[node])  < 2 or len(zip_time_dict[node]) > 800 and G.has_node(node):
+#             node_to_remove.append(node)
+#     for node in node_to_remove:
+#         G.remove_node(node)
+
+#     # node_to_remove = set(list(nx.isolates(G)))
+#     # for node in node_to_remove:
+#     #     G.remove_node(node) 
+#     # assert(len(list(nx.isolates(G))) == 0)
+
+#     print(len(G.nodes()))
+#     print(len(G.edges()))
+
+
+#     seq_list = []
+#     val_seq_list = []
+#     for key, val in zip_time_dict.items():
+#         if len(val) >= 2 and len(val) <= 800:
+#             seq_list.append(val[:-1])
+#             val_seq_list.append(val[-1])
+#     return G, seq_list, val_seq_list
+
+
 def read_911_data_sameregion(PATH):
     G = nx.Graph()
     path = os.path.join(PATH, '911.csv')
@@ -351,11 +440,12 @@ def read_911_data_sameregion(PATH):
 
     EMS = 'EMS'
     TRAFFIC = 'TRAFFIC'
+    Fire = 'Fire'
 
     for i in range(len(data)):
         if i > 0:
             _,_,_,zip_code, title,time_str,_,_,_ = data[i].strip('\n').split(',')
-            if len(zip_code) == 5 and EMS in title:
+            if len(zip_code) == 5 and Fire in title:
                 zip_code, timestamp = int(zip_code), time.mktime(datetime.datetime.strptime(time_str, "%m/%d/%y %H:%M").timetuple())
                 if timestamp >= 0 and timestamp <= 1.59e9:
                     time_list.append(timestamp)
@@ -382,7 +472,7 @@ def read_911_data_sameregion(PATH):
     # normalize time and add node to G
     for key, val in zip_time_dict.items():
         zip_time_dict[key] = [(time-min_time)/abs_max_time for time in val]
-        if not G.has_node(key) and (len(val) >= 2 and len(val) <= 7):
+        if not G.has_node(key) and (len(val) >= 2 and len(val) <= 800):
             G.add_node(key)
 
     # remove nodes in Graph
@@ -390,19 +480,30 @@ def read_911_data_sameregion(PATH):
     for node in list(G.nodes()):
         if node not in zip_time_dict and G.has_node(node):
             node_to_remove.append(node)
-        elif len(zip_time_dict[node])  < 2 or len(zip_time_dict[node]) > 7 and G.has_node(node):
+        elif len(zip_time_dict[node])  < 2 or len(zip_time_dict[node]) > 800 and G.has_node(node):
             node_to_remove.append(node)
     for node in node_to_remove:
         G.remove_node(node)
+
+    node_to_remove = set(list(nx.isolates(G)))
+    for node in node_to_remove:
+        G.remove_node(node) 
+    assert(len(list(nx.isolates(G))) == 0)
+
+    print(len(G.nodes()))
+    print(len(G.edges()))
 
 
     seq_list = []
     val_seq_list = []
     for key, val in zip_time_dict.items():
-        if len(val) >= 2 and len(val) <= 7:
+        if len(val) >= 2 and len(val) <= 800:
             seq_list.append(val[:-1])
             val_seq_list.append(val[-1])
     return G, seq_list, val_seq_list
+
+
+
 
 
 

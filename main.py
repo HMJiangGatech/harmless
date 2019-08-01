@@ -26,7 +26,7 @@ from update_param import *
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', type=str, default='stackoverflow')
+parser.add_argument('--data', type=str, default='911')
 parser.add_argument('--result_path', type=str, default='../result')
 parser.add_argument('--read_checkpoint', type=str, default=None)#'../result/our_checkpoint/linkedin_seed1_lr0.01_innerlr0.01_K2_pretrain0_iter10_method_maml_init_random.txt')
 parser.add_argument('--seed', type=int, default=1)

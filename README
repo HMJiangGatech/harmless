@@ -1,14 +1,15 @@
+#HARMLESS
 
+This is the code for paper "Meta Learning with Relational Information for Short Sequences".
 
-This code is excuted by calling main.py.
+##Execution
 
-Method choices: 'mle', 'maml', 'fomaml', 'reptile'
-Data choices: 'twitter', 'linkedin', 'mathoverflow','stackoverflow', '911', '911same'
+This code is executed by calling main.py.
 
-Files with names test_* is the test module for individual part of the code. File test_hawkes_module.py can serve as the code for baseline 2.
+Method choices: 'maml', 'fomaml', 'reptile'
+Data choices: 'linkedin', 'mathoverflow','stackoverflow', '911'
 
-Method reptile requires much larger learning rate than other methods.
+For StackOverflow data, please download from https://snap.stanford.edu/data/sx-stackoverflow.html.
 
-Please change the magnitude of delta T according to your dataset.
 
 

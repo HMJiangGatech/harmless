@@ -16,13 +16,11 @@ import torch.nn
 
 def pre_update_parameter(data, parameter, lr):
     G_matrix = data['matrix']
+    
     #alpha
     parameter['alpha'] = parameter['alpha0'] \
                         + np.sum(parameter['phi'], axis=1) \
                         + np.sum(parameter['psi'], axis=0)
-#    print('alpha', parameter['alpha'])
-    print('alpha', np.argmax(parameter['alpha'], axis=1), np.std(np.argmax(parameter['alpha'], axis=1)))
-
     
     digamma_alpha = digamma(parameter['alpha']) - digamma(np.sum(parameter['alpha'], axis=-1, keepdims=True))
     exp_digamma_alpha = np.exp(digamma_alpha)
@@ -37,32 +35,23 @@ def pre_update_parameter(data, parameter, lr):
     phi_right = np.sum(np.expand_dims(parameter['psi'], axis=-2)*B_to_Y, axis=-1)
     parameter['phi'] = np.expand_dims(exp_digamma_alpha, axis=1) * np.exp(phi_right)
     parameter['phi'] = parameter['phi']/np.sum(parameter['phi'], axis=-1, keepdims=True)
-#    print('phi', parameter['phi'][:,:,0])
     
     #psi
     psi_right = np.sum(np.expand_dims(parameter['phi'], axis=-1)*B_to_Y, axis=-2)
     parameter['psi'] = np.expand_dims(exp_digamma_alpha, axis=0) * np.exp(psi_right)
     parameter['psi'] = parameter['psi']/np.sum(parameter['psi'], axis=-1, keepdims=True)
-#    print('psi', parameter['psi'])
     
     # alpha0
-    
 #    digamma_alpha0 =  digamma(np.sum(parameter['alpha0'], axis=-1, keepdims=True)) - digamma(parameter['alpha0'])
 #    update_alpha0 = parameter['N']*digamma_alpha0 + np.sum(digamma_alpha, axis=0)
 #    parameter['alpha0'] = parameter['alpha0'] + lr*update_alpha0
-    
     
     #B
     phi_psi = np.expand_dims(parameter['phi'], axis=-1) * np.expand_dims(parameter['psi'], axis=-2)
     num_B = np.sum(phi_psi*np.expand_dims(np.expand_dims(G_matrix, axis=-1), axis=-1) , axis=(0,1))
     don_B =  np.sum(phi_psi, axis=(0,1))
 
-#    rho_num = np.sum((1-G_matrix)*np.sum(phi_psi, axis=(2,3)))
-#    rho_don = np.sum(phi_psi)
-#    don_B = (1-rho_num/rho_don) * np.sum(phi_psi, axis=(0,1))
-    parameter['B'] = (num_B/don_B)#.clip(1e-10, 1-1e-10)
-    
-#    print('B', parameter['B'])
+    parameter['B'] = (num_B/don_B)
     
     return 0
 
@@ -79,14 +68,15 @@ def update_parameter(data, parameter, hawkes_models, lr):
                         + parameter['gamma'] \
                         + np.sum(parameter['phi'], axis=1) \
                         + np.sum(parameter['psi'], axis=0)
-#    print('alpha', parameter['alpha'])
+
     print('alpha', np.std(np.argmax(parameter['alpha'], axis=1)))
+
     #gamma
     L = hawkes_models.compute_loss()
     exp_L = np.exp(-L)
 
     if np.any(np.isinf(exp_L)):
-        print('Overflow! Cut once ----------------------------')
+        print('Overflow! Cut once!')
         exp_L[exp_L>1e6] = 1e6
     
     if np.isnan(np.sum(exp_L)):
@@ -99,6 +89,7 @@ def update_parameter(data, parameter, hawkes_models, lr):
     parameter['gamma'] = parameter['gamma']/np.sum(parameter['gamma'], axis=-1, keepdims=True)
     
     print('gamma',  np.std(np.argmax(parameter['gamma'], axis=1)))
+
     #theta
     loss = hawkes_models.update_theta(parameter['gamma']/np.sum(parameter['gamma']))
     
@@ -113,17 +104,12 @@ def update_parameter(data, parameter, hawkes_models, lr):
     parameter['phi'] = np.expand_dims(exp_digamma_alpha, axis=1) * np.exp(phi_right)
     parameter['phi'] = parameter['phi']/np.sum(parameter['phi'], axis=-1, keepdims=True)
     
-#    print('phi', parameter['phi'])
-    
     #psi
     psi_right = np.sum(np.expand_dims(parameter['phi'], axis=-1)*B_to_Y, axis=-2)
     parameter['psi'] = np.expand_dims(exp_digamma_alpha, axis=0) * np.exp(psi_right)
     parameter['psi'] = parameter['psi']/np.sum(parameter['psi'], axis=-1, keepdims=True)
-
-#    print('psi', parameter['psi'])
     
-    # alpha0
-    
+    # alpha0   
 #    digamma_alpha0 =  digamma(np.sum(parameter['alpha0'], axis=-1, keepdims=True)) - digamma(parameter['alpha0'])
 #    update_alpha0 = parameter['N']*digamma_alpha0 + np.sum(digamma_alpha, axis=0)
 #    parameter['alpha0'] = parameter['alpha0'] + lr*update_alpha0
@@ -133,11 +119,6 @@ def update_parameter(data, parameter, hawkes_models, lr):
     num_B = np.sum(phi_psi*np.expand_dims(np.expand_dims(G_matrix, axis=-1), axis=-1) , axis=(0,1))
     don_B =  np.sum(phi_psi, axis=(0,1))
 
-#    rho_num = np.sum((1-G_matrix)*np.sum(phi_psi, axis=(2,3)))
-#    rho_don = np.sum(phi_psi)
-#    don_B = (1-rho_num/rho_don) * np.sum(phi_psi, axis=(0,1))
-    parameter['B'] = (num_B/don_B)#.clip(1e-10, 1-1e-10)
-    
-#    print('B', parameter['B'])
+    parameter['B'] = (num_B/don_B)
     
     return 0, loss

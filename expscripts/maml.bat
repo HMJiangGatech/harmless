@@ -1,9 +1,0 @@
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 3  --bjk 0.5 --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 6  --bjk 0.5 --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 10 --bjk 0.5 --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 3  --bjk 1   --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 6  --bjk 1   --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 10 --bjk 1   --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 3  --bjk 2   --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 6  --bjk 2   --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200
-start "" /d "../" python new_main.py --data mmb_hard --mmb_clusters 6 --K 10 --bjk 2   --method maml --lr 0.001 --inner_lr 0.001 --max_iter 200

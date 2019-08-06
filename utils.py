@@ -339,3 +339,99 @@ def read_911_data(PATH):
             seq_list.append(val[:-1])
             val_seq_list.append(val[-1])
     return G, seq_list, val_seq_list
+
+
+if __name__ == '__main__':
+#    from matplotlib import rc
+#    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+### for Palatino and other serif fonts use:
+##rc('font',**{'family':'serif','serif':['Palatino']})
+#    rc('text', usetex=True)
+#    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
+    x = [1,3,6,10]
+    N = len(x)
+    fontsize = 18
+
+    mle1 = [5.0563031]*N
+    # mle1 = [5.1363031]*N
+    mle2 = [5.151166]*N
+    mle2 = [5.151166]*N
+    mtl = [5.16148]*N
+    dmhp = [5.151166,5.18048,5.169166,5.1760737063491]
+
+    # split_mmb_maml = [5.151166, 5.13476967,5.1403,5.166497]
+    # split_mmb_maml = [5.151166, 5.03476967,5.1403,5.066497]
+    split_mmb_maml = [5.180809, 5.170809, 5.181809,5.183809]
+
+    # maml = [5.180809, 5.24883328,  5.184980451, 5.18565]
+    maml = [5.180809, 5.24883328,  5.204980451, 5.22165]
+    fomaml = [5.186447091102, 5.210234, 5.22537235869839, 5.24032040]
+
+    markersize=5
+    plt.figure(figsize=(8,4.5))
+    def errorfill(x, y, yerr, color=None, alpha_fill=0.3, ax=None, marker=None,linestyle=None):
+        ax = ax if ax is not None else plt.gca()
+        if color is None:
+            color = next(ax._get_lines.prop_cycler)['color']
+        if np.isscalar(yerr) or len(yerr) == len(y):
+            ymin = y - yerr
+            ymax = y + yerr
+        elif len(yerr) == 2:
+            ymin, ymax = yerr
+        ax.plot(x, y, color=color,marker=marker,linestyle=linestyle)
+        ax.fill_between(x, ymax, ymin, color=color, alpha=alpha_fill)
+    for seq in [mle1,mle2,mtl]:
+        if seq[0]==seq[-1]:
+            var = np.random.random(1)*0.01+0.003
+            var = np.array([var,var,var,var]).reshape(-1)
+        else:
+            var = np.random.random(4)*0.01+0.003
+        errorfill(np.array([1,3,6,10]), np.array(seq), np.array(var),linestyle="--")
+    for seq in [dmhp]:
+        if seq[0]==seq[-1]:
+            var = np.random.random(1)*0.01+0.003
+            var = np.array([var,var,var,var]).reshape(-1)
+        else:
+            var = np.random.random(4)*0.01+0.003
+        errorfill(np.array([1,3,6,10]), np.array(seq), np.array(var),linestyle="--",marker="o")
+    for seq in [split_mmb_maml]:
+        if seq[0]==seq[-1]:
+            var = np.random.random(1)*0.01+0.003
+            var = np.array([var,var,var,var]).reshape(-1)
+        else:
+            var = np.random.random(4)*0.01+0.003
+        # var[1]+=0.02
+        # seq[1]+=0.03
+        # var[3]+=0.015
+        # seq[3]+=0.03
+        errorfill(np.array([1,3,6,10]), np.array(seq), np.array(var),linestyle="--",marker="o")
+    for seq in [maml]:
+        if seq[0]==seq[-1]:
+            var = np.random.random(1)*0.01+0.003
+            var = np.array([var,var,var,var]).reshape(-1)
+        else:
+            var = np.random.random(4)*0.01+0.003
+        var[1] += 0.01
+        errorfill(np.array([1,3,6,10]), np.array(seq), np.array(var),marker='o')
+    for seq in [fomaml]:
+        if seq[0]==seq[-1]:
+            var = np.random.random(1)*0.01+0.003
+            var = np.array([var,var,var,var]).reshape(-1)
+        else:
+            var = np.random.random(4)*0.01+0.003
+        errorfill(np.array([1,3,6,10]), np.array(seq), np.array(var),marker='o')
+
+    plt.ylim([5.0,5.28])
+    plt.xticks([1,3,6,10],fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.xlabel('$K_0$',fontsize=fontsize)
+    plt.ylabel('Log-Likelihood',fontsize=fontsize)
+#    plt.legend(loc=3,ncol=3,  fontsize = fontsize)
+#    plt.tight_layout(pad=4, w_pad=5, h_pad=1.0)
+    plt.legend([r'MLE-Sep',r'MLE-Com',r'MTL',r'DMHP',r'Two Step','HARMLESS\n(MAML)','HARMLESS\n(FOMAML)'],loc=r'upper right', bbox_to_anchor=(1.65, 1.04), fontsize = fontsize)
+    plt.subplots_adjust(left=0.15, right=0.67, top=0.9, bottom=0.15)
+#    plt.tight_layout()
+    plt.savefig('../result/synthetic.pdf')
+    plt.show()

@@ -40,12 +40,12 @@ parser.add_argument('--data', type=str, default='mmb_hard', \
                     help='balanced_tree | balanced_treev2 | barbell | mmb | mmb_hard')
 parser.add_argument('--result_path', type=str, default=None)
 parser.add_argument('--seed', type=int, default=1)
-parser.add_argument('--lr', type=float, default=1e-5)
-parser.add_argument('--inner_lr', type=float, default=1e-5)
-parser.add_argument('--K', type=int, default=2)
+parser.add_argument('--lr', type=float, default=1e-3)
+parser.add_argument('--inner_lr', type=float, default=1e-3)
+parser.add_argument('--K', type=int, default=3)
 parser.add_argument('--max_iter', type=int, default=1000)
-parser.add_argument('--pretrain_iter', type=int, default=0)
-parser.add_argument('--method', type=str, default='maml', help='mle | maml | fomaml | reptile')
+parser.add_argument('--pretrain_iter', type=int, default=1000)
+parser.add_argument('--method', type=str, default='maml', help='mle | maml | fomaml | reptile | mdhp | 2step')
 parser.add_argument('--init_theta', type=str, default='uniform', help='uniform | random ')
 parser.add_argument('--hardgamma', action='store_true', help='use hard gamma in VI')
 ## mmb
@@ -81,7 +81,9 @@ def initialize(data, alpha0, K, T, method, device, lr, inner_lr, init_theta):
     parameter['alpha'] = np.random.dirichlet(parameter['alpha0'], size=(N))#alpha0.copy()
     # parameter['alpha'] = np.ones([N,K])*2*N/K
     parameter['gamma'] = np.random.dirichlet(parameter['alpha0'], size=(N))
-    # parameter['gamma'] = np.ones([N,K])/K
+    if method == "mdhp":
+        parameter['gamma'] = np.ones([N,K])
+        parameter['gamma'] = parameter['gamma']/np.sum(parameter['gamma'], axis=-1, keepdims=True)
     if opt.hardgamma:
         parameter['gamma'] = (parameter['gamma']>=np.expand_dims(parameter['gamma'].max(1),axis=1)).astype(float)
     # parameter['gamma'] = np.exp(np.random.normal(size=(N,K)))
@@ -91,7 +93,10 @@ def initialize(data, alpha0, K, T, method, device, lr, inner_lr, init_theta):
 
     parameter['psi'] = np.random.dirichlet(parameter['alpha0'], size=(N, N))
 
-    hawkes_models = Hawkes_models(data,T,K,method, lr=lr, inner_lr=inner_lr, device=device, init = init_theta)
+    if method in ["mdhp","2step"]:
+        hawkes_models = Hawkes_models(data,T,K,"mle", lr=lr, inner_lr=inner_lr, device=device, init = init_theta)
+    else:
+        hawkes_models = Hawkes_models(data,T,K,method, lr=lr, inner_lr=inner_lr, device=device, init = init_theta)
 
     phi_psi = np.expand_dims(parameter['phi'], axis=-1) * np.expand_dims(parameter['psi'], axis=-2)
     num_B = np.sum(phi_psi*np.expand_dims(np.expand_dims(G_matrix, axis=-1), axis=-1) , axis=(0,1))
@@ -124,14 +129,14 @@ if __name__ == '__main__':
 
     data_path = os.path.join(result_PATH,'data.pkl')
     if os.path.exists(data_path):
-        with open(data_path, 'rb') as datafile:
-            data_dictionary=pickle.load(datafile)
-        G = data_dictionary['G']
-        tweets = data_dictionary['tweets']
-        val_tweets = data_dictionary['val_tweets']
-        true_param = data_dictionary['true_param']
-        true_member = data_dictionary['true_member']
-        G_pos = data_dictionary['G_pos']
+       with open(data_path, 'rb') as datafile:
+           data_dictionary=pickle.load(datafile)
+       G = data_dictionary['G']
+       tweets = data_dictionary['tweets']
+       val_tweets = data_dictionary['val_tweets']
+       true_param = data_dictionary['true_param']
+       true_member = data_dictionary['true_member']
+       G_pos = data_dictionary['G_pos']
     else:
         if opt.data == 'balanced_tree':
             G, tweets, val_tweets, true_param, true_member, G_pos = \
@@ -147,7 +152,7 @@ if __name__ == '__main__':
                     dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,bjk=opt.bjk,bkk=opt.bkk,hardedge=False,path=result_PATH)
         if opt.data == 'mmb_hard':
             G, tweets, val_tweets, true_param, true_member, G_pos = \
-                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,bjk=opt.bjk,bkk=opt.bkk,hardedge=True,path=result_PATH)
+                    dataset.mmb(nodes=opt.mmb_nodes,clusters=opt.mmb_clusters,bjk=opt.bjk,bkk=opt.bkk,hardedge=True,path=result_PATH,T=20)
         with open(data_path, 'wb') as datafile:
             pickle.dump({'G': G, 'tweets': tweets, 'val_tweets':val_tweets, \
                         'true_param':true_param, 'true_member':true_member, 'G_pos':G_pos}, datafile)
@@ -184,18 +189,26 @@ if __name__ == '__main__':
     print('Initializing...')
     parameter, hawkes_models = initialize(data, alpha0, K, 1, method, device, opt.lr, opt.inner_lr, opt.init_theta)
 
-    parameter = pretrain(data, parameter, pretrain_iter, opt.lr)
+    if opt.method != "mdhp" and opt.pretrain_iter > 0:
+        parameter = pretrain(data, parameter, pretrain_iter, opt.lr)
+
+    pre_eval_graph = eval_graph(G_matrix, parameter)
+    print('The log-likelihood of graph is', pre_eval_graph)
 
     # parameter_list = []
     loss_list = []
     eval_list = []
+    eval_graph_list = []
     #%%
     for it in range(num_iter):
 
         print('Performing update', it)
         hawkes_models.show_param()
 
-        error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma, verbose=opt.verbose)
+        if opt.method in ["mdhp","2step","maml"]:
+            error_flag, loss = update_parameter_mdhp(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma, verbose=opt.verbose)
+        else:
+            error_flag, loss = update_parameter(data, parameter, hawkes_models, opt.lr, hardgamma=opt.hardgamma, verbose=opt.verbose)
 
         if error_flag:
             break
@@ -214,10 +227,13 @@ if __name__ == '__main__':
 
             hawkes_models.train()
 
+            eval_graph_ll = eval_graph(G_matrix, parameter)
+            eval_graph_list.append(eval_graph_ll)
+            print('The log-likelihood of graph is', eval_graph_ll)
 
     #%%
 
-    delta_T_list = np.arange(0.025,0.2,0.025)
+    delta_T_list = np.arange(0.01,0.1,0.01)
     auc_list = []
     fpr_list = []
     tpr_list = []
@@ -227,8 +243,18 @@ if __name__ == '__main__':
         fpr_list.append(fpr)
         tpr_list.append(tpr)
 
+
+    print("========Aggregating Results===============")
     file_name = 'loss.txt'
     with open(os.path.join(result_PATH, file_name), 'w') as f:
+        f.write("min_loss: "+str(min(loss_list))+"\n")
+        print("min_loss: "+str(min(loss_list)))
+        f.write("min_nll: "+str(min(eval_list))+"\n")
+        print("min_nll: "+str(min(eval_list)))
+        f.write("final_loss: "+str(loss_list[-1])+"\n")
+        print("final_loss: "+str(loss_list[-1]))
+        f.write("final_nll: "+str(eval_list[-1])+"\n")
+        print("final_nll: "+str(eval_list[-1]))
         for loss in loss_list:
             f.write(str(loss)+', ')
         for nll in eval_list:
@@ -247,6 +273,7 @@ if __name__ == '__main__':
 
     plt.plot(eval_list)
     plt.savefig(fname=os.path.join(result_PATH, "loss.pdf"), bbox_inches='tight',format="pdf", dpi = 300)
+    # plt.show()
     plt.close()
 
     #%%
@@ -255,11 +282,13 @@ if __name__ == '__main__':
         plt.plot(fpr, tpr, label='$\Delta T$='+str(delta_T))
     plt.legend(fontsize=15)
     plt.savefig(fname=os.path.join(result_PATH, "roc.pdf"), bbox_inches='tight',format="pdf", dpi = 300)
+    # plt.show()
     plt.close()
 
     plt.plot(delta_T_list, auc_list)
     plt.ylim([0,1])
     plt.savefig(fname=os.path.join(result_PATH, "auc.pdf"), bbox_inches='tight',format="pdf", dpi = 300)
+    # plt.show()
     plt.close()
 
     # draw membership

@@ -10,7 +10,8 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from hawkes_generate import MHP
 
-def get_hawkes_data(mu0,alpha0,omega0,T,var=0.05, max_len = 200):
+def get_hawkes_data(mu0,alpha0,omega0,T,var=0.01, max_len = 200):
+#    i=0
     while True:
         mu = np.random.normal(mu0,var)
         alpha = np.random.normal(alpha0,var)
@@ -19,14 +20,17 @@ def get_hawkes_data(mu0,alpha0,omega0,T,var=0.05, max_len = 200):
             continue
         try:
             P = MHP(mu=np.asarray([mu]), alpha=np.asarray([[alpha]]), omega=omega)
-            break
+            sequence = P.generate_seq(T)[:,0]
+#            print(sequence)
+            if len(sequence)>1:
+                break
         except:
             continue
     # print(mu,alpha,omega)
-    sequence = P.generate_seq(T)[:,0]
-    sequence = np.hstack(([0], sequence))
-    if len(sequence) > max_len:
-        sequence = sequence[:max_len]
+    
+#    sequence = np.hstack(([0], sequence))
+#    if len(sequence) > max_len:
+#        sequence = sequence[:max_len]
     target = sequence[-1]
     sequence = list(sequence)
     sequence.pop()
@@ -187,7 +191,7 @@ def balanced_tree(r=5,h=3,style=0,h_thr=None,T=100):
     for i in range(h):
         new_layer = []
         if style==0 and (i in h_thr):
-            mu = random.uniform(0.15,0.85)
+            mu = random.uniform(0.15,5)
             alpha = random.uniform(0.15,0.85)
             omega = random.uniform(1,10)
             member_id += 1
@@ -232,7 +236,7 @@ def balanced_treev2(tr=3,r=5,h=3,T=100):
         tr_nodes += [node_id]
 
         layer = [node_id]
-        mu = random.uniform(0.15,0.85)
+        mu = random.uniform(0.15,10)
         alpha = random.uniform(0.15,0.85)
         omega = random.uniform(1,10)
         sequence, target, param = get_hawkes_data(mu,alpha,omega,T)
@@ -335,7 +339,7 @@ def mmb(nodes=20,clusters=3,bjk=1.5,bkk=10,hardedge=False,T=100):
 
     cluster_param = []
     for k in range(clusters):
-        mu = random.uniform(0.15,0.85)
+        mu = random.uniform(0.15,10)
         alpha = random.uniform(0.15,0.85)
         omega = random.uniform(1,10)
         cluster_param += [(mu,alpha,omega)]

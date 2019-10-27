@@ -44,7 +44,6 @@ class Hawkes_univariant(nn.Module):
         delta = update_alpha * (torch.exp(-update_w*delta_T)-1) * torch.sum(delta)
         
         prob = 1 - torch.exp(-update_mu*delta_T + delta)
-#        print(prob)
         return prob
     
     def update_once(self, x):
@@ -294,11 +293,11 @@ class Hawkes_models():
         elif self.method == 'reptile':
             loss_accum = 0
             for user_id, tweet in enumerate(self.tweets):
-#                print(user_id)
+
                 self.optimizer.zero_grad()
                 for k, (model, update) in enumerate(zip(self.models,self.updates[user_id])):
                     params = [model.mu, model.alpha, model.w]
-#                    print(update)
+
                     for param1, param2 in zip(update,params):
                         if param2.grad is None:
                             param2.grad = loss_weights[user_id,k] * param1
@@ -387,18 +386,7 @@ class Hawkes_models():
         
         return roc_auc, fpr, tpr
     
-#    def write_model(self, f):
-#        for k, model in enumerate(self.models):
-#            temp = {'Model:', k, "mu:",model.mu.item(),"alpha:",model.alpha.item(),"w:",model.w.item()}
-#            f.write(pickle.dumps(temp))
-#            
-#    def load_checkpoint(self, model_param):
-#        for k, (param, model) in enumerate(zip(model_param, self.models)):
-#            param = pickle.loads(param)
-#            
-#            model.mu.data.fill_(param['mu'])
-#            model.alpha.data.fill_(param['alpha'])
-#            model.w.data.fill_(param['w'])
+
         
         
         
